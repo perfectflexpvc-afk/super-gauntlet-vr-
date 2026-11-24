@@ -133,6 +133,8 @@ body.safe .flash{background:#ffe9c8}
 .angelsay img{width:clamp(56px,9vw,92px);height:clamp(56px,9vw,92px);border-radius:50%;object-fit:cover;border:2px solid #ffe7b0;flex:none}
 .angelsay b{display:block;font:800 clamp(14px,1.6vw,18px) Cinzel,serif;color:#ffd98a}
 .angelsay p{margin:3px 0 0;font-size:clamp(13px,1.6vw,17px);line-height:1.35;color:#fff3dc}
+
+#codePad{display:grid;grid-template-columns:repeat(3,64px);gap:8px;margin-top:10px}#codePad button{font:800 24px/1 'Alegreya Sans',sans-serif;height:52px;border-radius:10px;border:1px solid var(--line);background:#2a1f16;color:#fff1d6;cursor:pointer}#codePad button:hover{background:#3a2a1c}#codePad .padgo{background:#7a3a0c;border-color:#ffcf7a;font-size:18px}
 </style></head><body>
 <div id="stage"></div>
 <div id="hud"></div>
@@ -170,7 +172,8 @@ body.safe .flash{background:#ffe9c8}
   </div>
   <section class="netbox"><h3>Play together</h3><p class="note" id="netStatus">Checking for online play…</p><div id="netList"></div>
    <div class="netrow"><label>Who can see games I start <select id="netVis"><option value="wifi">Only devices on my WiFi</option><option value="public">Everyone (public game)</option><option value="code">Only people with my room code</option></select></label></div>
-   <div class="netrow"><label>Room code <input id="joinCode" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC123"></label><button class="alt" id="joinCodeBtn">Join</button><button class="alt" id="joinCodeVR" hidden>Join in VR</button></div></section>
+   <div class="netrow"><label>Room code <input id="joinCode" maxlength="6" inputmode="numeric" pattern="[0-9]*" autocomplete="off" spellcheck="false" placeholder="123456"></label><button class="alt" id="joinCodeBtn">Join</button><button class="alt" id="joinCodeVR" hidden>Join in VR</button></div>
+   <div id="codePad"><button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button><button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button><button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button><button data-k="del">⌫</button><button data-k="0">0</button><button data-k="go" class="padgo">Join</button></div></section>
   <p class="note" id="vrNote">VR: open this page in your headset's browser (such as Meta Quest) and press Enter VR. In VR, Player 1 wears the headset.</p>
   <div class="help">
     <section><h3>Mouse + keyboard</h3><dl><dt>WASD</dt><dd>Move</dd><dt>Mouse</dt><dd>Look (click the game to grab the mouse); arrow keys also turn</dd><dt>Left click</dt><dd>Fire</dd><dt>Space / right click</dt><dd>Hero power</dd><dt>Shift</dt><dd>Dash (the Wizard blinks)</dd><dt>F or Q</dt><dd>Wizard staff swing</dd><dt>E</dt><dd>Eat stored food</dd><dt>R</dt><dd>Drink potion</dd><dt>Enter / Esc</dt><dd>Pause</dd></dl></section>
@@ -1231,8 +1234,9 @@ function hostNet(dt){if(!NET.nr)return;let any=false;
  if((NET.adT-=dt)<=0){NET.adT=3;advertise()}}
 // a paused host whose screen is off or tab hidden still keeps the other devices connected
 setInterval(()=>{if(G&&G.paused&&G.net==='host'&&!G.over)hostNet(.25)},250);
-function prepRoom(){if(!NET.room||NET.pre||NET.preBusy)return;NET.preBusy=true;const code='g'+Math.random().toString(36).slice(2,8);Promise.resolve(NET.room.join(code)).then(nr=>{NET.pre={code,nr};NET.preBusy=false}).catch(()=>{NET.preBusy=false})}
-async function startHosting(){if(!NET.room)return;NET.mode='host';G.net='host';if(NET.pre){NET.code=NET.pre.code;NET.nr=NET.pre.nr;NET.pre=null;advertise();showRoomInfo();return}NET.code='g'+Math.random().toString(36).slice(2,8);try{NET.nr=await NET.room.join(NET.code);advertise();showRoomInfo()}catch(e){NET.nr=null}}
+const newCode=()=>'g'+String(Math.floor(100000+Math.random()*900000));
+function prepRoom(){if(!NET.room||NET.pre||NET.preBusy)return;NET.preBusy=true;const code=newCode();Promise.resolve(NET.room.join(code)).then(nr=>{NET.pre={code,nr};NET.preBusy=false}).catch(()=>{NET.preBusy=false})}
+async function startHosting(){if(!NET.room)return;NET.mode='host';G.net='host';if(NET.pre){NET.code=NET.pre.code;NET.nr=NET.pre.nr;NET.pre=null;advertise();showRoomInfo();return}NET.code=newCode();try{NET.nr=await NET.room.join(NET.code);advertise();showRoomInfo()}catch(e){NET.nr=null}}
 async function joinGame(code,vr){if(!NET.room)return;const sess=null;unlockMusic();NET.wantVR=!!(vr&&navigator.xr);
  const s=slots[0],ctrl=(s.ctrl==='off'||s.ctrl==='ai')?(COARSE?'touch':'km'):s.ctrl;
  initAudio();teardown();G=newState();G.net='client';NET.mode='client';NET.code=code;NET.lastTick=-1;NET.hostSeen=performance.now();NET.cnt={a1:0,a2:0,pt:0,ea:0,fc:0};
@@ -1306,6 +1310,9 @@ function showRoomInfo(){const ri=$('#roomInfo');if(!ri||!NET.code)return;const s
 function joinByCode(vr){const c=codeOf($('#joinCode').value);if(!c){menuMsg('Type the room code shown on the host’s pause screen.');return}if(!NET.room){menuMsg('Online play is still connecting. Try again in a moment.');return}joinGame(c,vr)}
 $('#joinCodeBtn').addEventListener('click',()=>joinByCode(false));$('#joinCodeVR').addEventListener('click',()=>joinByCode(true));
 $('#joinCode').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();joinByCode(false)}});
+// on-screen number pad, so codes can be entered with a VR controller pointer, a mouse or a finger without the system keyboard
+for(const b of document.querySelectorAll('#codePad button')){b.addEventListener('pointerdown',e=>e.preventDefault());b.addEventListener('click',()=>{const inp=$('#joinCode'),k=b.dataset.k;
+ if(k==='del')inp.value=inp.value.slice(0,-1);else if(k==='go')joinByCode(false);else if(k==='govr')joinByCode(true);else if(inp.value.replace(/\D/g,'').length<6)inp.value=inp.value.replace(/\D/g,'')+k;try{sfx('pick')}catch(x){}})}
 {const sel=$('#netVis');try{const v=localStorage.getItem('sgvr_vis');if(v&&[...sel.options].some(o=>o.value===v))sel.value=v}catch(x){}NET.vis=sel.value;sel.addEventListener('change',()=>{NET.vis=sel.value;try{localStorage.setItem('sgvr_vis',sel.value)}catch(x){}advertise()})}
 {const q=new URLSearchParams(location.search).get('join');if(q&&codeOf(q)){$('#joinCode').value=q.toUpperCase();setTimeout(()=>menuMsg('Pick your hero in Player 1, then press Join next to the room code.'),50)}}
 
