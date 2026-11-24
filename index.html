@@ -513,7 +513,7 @@ function menuLoopTick(){if(!AC)return;const want=musicOn&&BOOTDONE&&!$('#menu').
  if(want&&MENU.buf&&!MENU.src){if(!MENU.g){MENU.g=AC.createGain();MENU.g.gain.value=0;MENU.g.connect(AC.destination)}const s=AC.createBufferSource();s.buffer=MENU.buf;s.loop=true;s.loopStart=3.0;s.loopEnd=MENU.buf.duration;s.connect(MENU.g);s.start();MENU.src=s}
  if(MENU.g){const t=want?.55:0;MENU.g.gain.value+=(t-MENU.g.gain.value)*(want?.04:.08);if(!want&&MENU.src&&MENU.g.gain.value<.01){try{MENU.src.stop()}catch(e){}MENU.src=null}}}
 function music(){menuLoopTick();const want=musicOn&&G&&!G.demo&&!G.over&&!G.paused&&!!G.lg;if(!want){if(!BGM.paused)BGM.pause();return}
- musicMix();const src=G.pools&&G.pools.length?ANGEL_SONG:SONGS[songFor()];if(src!==bgmSrc){bgmSrc=src;BGM.src=src;bgmT=-9999}
+ musicMix();const src=G.pools&&G.pools.length?ANGEL_SONG:G.flood?'music/flooded-dungeon.mp3':G.level>15?'music/dig-down.mp3':SONGS[songFor()];if(src!==bgmSrc){bgmSrc=src;BGM.src=src;bgmT=-9999}
  if(BGM.paused&&performance.now()-bgmT>1500){bgmT=performance.now();try{const r=BGM.play();if(r&&r.catch)r.catch(()=>{})}catch(e){}}}
 function unlockMusic(){try{BGM.src=bgmSrc=SONGS[0];const r=BGM.play();if(r&&r.then)r.then(()=>{if(!G||G.demo)BGM.pause()}).catch(()=>{})}catch(e){}}
 let sayT=0;function say(t,force){const n=performance.now();if(!force&&n-sayT<2500)return;sayT=n;try{const u=new SpeechSynthesisUtterance(t);u.rate=.9;u.pitch=.5;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
@@ -544,7 +544,7 @@ function genLevel(lv,tr){
  if(!tr){const cand=[];for(let j=2;j<H-2;j++)for(let i=2;i<W-2;i++){const k=j*W+i;if(g[k]!==1)continue;if((g[k-1]===0&&g[k+1]===0)||(g[k-W]===0&&g[k+W]===0))cand.push(k)}
   for(let n=Math.min(cand.length,6+lv);n>0;n--){const k=cand.splice(rnd(cand.length),1)[0];if(k!==undefined)g[k]=3}}
  let secret=null;
- if(!tr&&lv>=10&&lv%2===0){const mids=chain.slice(1,-1);for(let t=0;t<80&&!secret&&mids.length;t++){const r=mids[rnd(mids.length)],side=rnd(4);let wx,wy,x0,y0;
+ if(!tr&&lv>=10&&lv%2===0&&!(lv>=22&&(lv-15)%7===0)){const mids=chain.slice(1,-1);for(let t=0;t<80&&!secret&&mids.length;t++){const r=mids[rnd(mids.length)],side=rnd(4);let wx,wy,x0,y0;
   if(side===0){wx=r.x+r.w;wy=r.cy;x0=wx+1;y0=wy-1}else if(side===1){wx=r.x-1;wy=r.cy;x0=wx-3;y0=wy-1}else if(side===2){wx=r.cx;wy=r.y+r.h;x0=wx-1;y0=wy+1}else{wx=r.cx;wy=r.y-1;x0=wx-1;y0=wy-3}
   if(x0<2||y0<2||x0+4>W-1||y0+4>H-1||g[wy*W+wx]!==1)continue;let ok=true;
   for(let j=y0-1;j<=y0+3&&ok;j++)for(let i=x0-1;i<=x0+3;i++){if(i===wx&&j===wy)continue;if(g[j*W+i]!==1){ok=false;break}}
