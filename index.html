@@ -219,7 +219,10 @@ const EDEF={
  sorcerer:{hp:6,speed:3.2,touch:12,pts:50,burst:0xb060ff,r:.5,blink:true,eye:[.85,.45,1],ey:1.8,ez:.24,ex:.08,gen:0xc070ff},
  death:{hp:1e9,speed:3.5,touch:0,pts:1000,burst:0x403848,r:.5,death:true,eye:[1,.1,.05],ey:2.08,ez:.2,ex:.08,gen:0xff2030},
  gargoyle:{hp:4,speed:4.2,touch:11,pts:30,burst:0x70ff60,r:.5,eye:[.6,1,.3],ey:2.1,ez:.3,ex:.1,gen:0x80ff60},
- naga:{hp:14,speed:2.3,touch:22,pts:60,burst:0xc8a050,r:.62,eye:[1,.2,.1],ey:2.0,ez:.3,ex:.1,gen:0xd0a050}
+ naga:{hp:14,speed:2.3,touch:22,pts:60,burst:0xc8a050,r:.62,eye:[1,.2,.1],ey:2.0,ez:.3,ex:.1,gen:0xd0a050},
+ eel:{hp:3,speed:5.4,touch:13,pts:40,burst:0x60ff90,r:.45,water:true,eye:[.5,1,.6],ey:.6,ez:.5,ex:.08,gen:0x60ff90},
+ drowned:{hp:6,speed:2.4,touch:14,pts:35,burst:0x8a9a70,r:.5,water:true,eye:[.4,1,1],ey:1.95,ez:.25,ex:.09,gen:0x60c0c0},
+ drownbrute:{hp:13,speed:1.9,touch:24,pts:60,burst:0x9a7a50,r:.6,water:true,eye:[1,.5,.2],ey:2.05,ez:.25,ex:.1,gen:0xc08040}
 };
 const N8=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
 const ICON={
@@ -470,7 +473,7 @@ const POOLS={
  demon:new Pool(GEO.demon,stdv({roughness:.45,emissive:0x2a0402,side:THREE.DoubleSide}),420),
  lobber:new Pool(GEO.lobber,stdv({roughness:.85}),300),
  sorcerer:new Pool(GEO.sorcerer,stdv({roughness:.55,emissive:0x14061e}),300),
- gargoyle:new Pool(GEO.demon,stdv({roughness:.5,emissive:0x0a2004,side:THREE.DoubleSide}),420),naga:new Pool(GEO.grunt,stdv({roughness:.6}),300),
+ gargoyle:new Pool(GEO.demon,stdv({roughness:.5,emissive:0x0a2004,side:THREE.DoubleSide}),420),naga:new Pool(GEO.grunt,stdv({roughness:.6}),300),eel:new Pool(GEO.ghost,stdv({roughness:.3,emissive:0x0a3a14}),200),drowned:new Pool(GEO.grunt,stdv({roughness:.8}),300),drownbrute:new Pool(GEO.grunt,stdv({roughness:.8}),200),
  death:new Pool(GEO.death,stdv({roughness:.95,metalness:.1,side:THREE.DoubleSide}),20),
  axe:new Pool(GEO.axe,stdv({metalness:.85,roughness:.32}),150),axe5:new Pool(GEO.axe5,stdv({metalness:.85,roughness:.32,emissive:0x203040}),150),
  arrow:new Pool(GEO.arrow,stdv({roughness:.6}),400),
@@ -799,7 +802,7 @@ cam.getWorldPosition(_cp);for(const p of players){const b=p.body;if(!b.bb||!b.bb
  const mat=b.atkReady&&p.anim>.2?b.bbAtkMat:b.bbMat;if(b.bb.material!==mat)b.bb.material=mat;if(mat.map)mat.map.offset.x=idx/8}}
 
 // ---------- your monster sheets, drawn as camera-facing sprites (front, 3/4 and side views)
-const MSPR={ghost:{h:2.6,f:1},grunt:{h:2.55},demon:{h:3.0,f:1},lobber:{h:1.9,f:1},sorcerer:{h:2.75},death:{h:3.15,f:1},gargoyle:{h:2.85,f:1},naga:{h:2.6},knife:{h:.62,p:1},knife5:{h:.7,p:1}};
+const MSPR={ghost:{h:2.6,f:1},grunt:{h:2.55},demon:{h:3.0,f:1},lobber:{h:1.9,f:1},sorcerer:{h:2.75},death:{h:3.15,f:1},gargoyle:{h:2.85,f:1},naga:{h:2.6},eel:{h:1.2,w:2.4},drowned:{h:2.6},drownbrute:{h:2.75},knife:{h:.62,p:1},knife5:{h:.7,p:1}};
 const BBV=`attribute float iYaw;attribute vec3 iTint;varying vec2 vUv;varying vec3 vTint;
 #include <fog_pars_vertex>
 void main(){vec3 c=(modelMatrix*instanceMatrix*vec4(0.,0.,0.,1.)).xyz;vec3 to=cameraPosition-c;to.y=0.;vec3 u=to/max(length(to),.001);vec3 r=vec3(u.z,0.,-u.x);
@@ -815,7 +818,7 @@ void main(){vec4 t=texture2D(map,vUv);if(t.a<.35)discard;gl_FragColor=vec4(t.rgb
 #include <fog_fragment>
 }`;
 const MPOOL={};
-for(const [type,S] of Object.entries(MSPR)){const geo=new THREE.PlaneGeometry(S.h/2,S.h);geo.translate(0,S.h/2,0);const max=type==='death'?20:S.p?300:420;
+for(const [type,S] of Object.entries(MSPR)){const geo=new THREE.PlaneGeometry(S.w||S.h/2,S.h);geo.translate(0,S.h/2,0);const max=type==='death'?20:S.p?300:420;
  const mat=new THREE.ShaderMaterial({uniforms:THREE.UniformsUtils.merge([THREE.UniformsLib.fog,{map:{value:null}}]),vertexShader:BBV,fragmentShader:BBF,fog:true,side:THREE.DoubleSide});
  const m=new THREE.InstancedMesh(geo,mat,max);m.frustumCulled=false;m.count=0;m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
  const yaw=new THREE.InstancedBufferAttribute(new Float32Array(max),1),tint=new THREE.InstancedBufferAttribute(new Float32Array(max*3),3);yaw.setUsage(THREE.DynamicDrawUsage);tint.setUsage(THREE.DynamicDrawUsage);geo.setAttribute('iYaw',yaw);geo.setAttribute('iTint',tint);
@@ -1033,6 +1036,7 @@ function spawnFromGens(dt){if(G.transT>0)return;for(const g of G.gens){g.t-=dt;i
 function updateEnemies(dt){const W=G.W,E=G.enemies,wiz=players.filter(p=>p.hero==='wizard'&&p.alive),kd=Math.pow(.02,dt);
  for(let k=0;k<E.length;k++){const e=E[k];if(e.dead)continue;const D0=EDEF[e.type];e.atk-=dt;e.stun-=dt;e.flash-=dt;
   if(e.kx||e.kz){e.x+=e.kx*dt;e.z+=e.kz*dt;e.kx*=kd;e.kz*=kd;if(Math.abs(e.kx)+Math.abs(e.kz)<.1)e.kx=e.kz=0}
+  if(D0.water&&waterAI(e,dt))continue;
   if(D0.blink){e.blink-=dt;if(e.blink<=0){e.hidden=!e.hidden;e.blink=e.hidden?rf(1,1.6):rf(1.8,2.8);burst(e.x,1.4,e.z,0xc070ff,8,2)}}
   const n=nearest(e);const ox=e.x,oz=e.z;
   if(n&&e.stun<=0){let tx=n.p.x,tz=n.p.z,flee=false;
@@ -1042,7 +1046,7 @@ function updateEnemies(dt){const W=G.W,E=G.enemies,wiz=players.filter(p=>p.hero=
     else if(d0===65535){tx=e.x;tz=e.z}}
    else if(!flee){tx=e.x;tz=e.z}
    let dx=tx-e.x,dz2=tz-e.z;if(flee){dx=e.x-n.p.x;dz2=e.z-n.p.z}const dl=Math.hypot(dx,dz2);
-   if(dl>.05){const s=D0.speed*G.spd*(e.hidden?1.4:1)*(G.flood&&G.flood.h>.4?(e.type==='naga'?1.6:.85):1)*dt;e.x+=dx/dl*s;e.z+=dz2/dl*s}
+   if(dl>.05){const s=D0.speed*G.spd*(e.hidden?1.4:1)*(G.flood&&G.flood.h>.4?(e.type==='naga'?1.6:D0.water?1:.85):1)*dt;e.x+=dx/dl*s;e.z+=dz2/dl*s}
    const fx=n.p.x-e.x,fz=n.p.z-e.z;e.rot=Math.atan2(flee||dl<.05?fx:dx,flee||dl<.05?fz:dz2);
    if(D0.shoots&&(e.fire-=dt)<=0){e.fire=rf(1.8,3.2);if(n.d<18&&los(e.x,e.z,n.p.x,n.p.z)){const l=Math.hypot(fx,fz)||1;G.eproj.push({x:e.x+fx/l*.6,y:1.5,z:e.z+fz/l*.6,vx:fx/l*13,vz:fz/l*13,life:2.2});sfx('fireball')}}
    if(D0.lob&&(e.fire-=dt)<=0){e.fire=rf(2,3.2);if(n.d<16){const tt=1.1,vy=14*tt/2;G.rocks.push({x:e.x,y:1.4,z:e.z,vx:(n.p.x-e.x)/tt,vy,vz:(n.p.z-e.z)/tt,spin:0});sfx('lob')}}}
@@ -1050,7 +1054,7 @@ function updateEnemies(dt){const W=G.W,E=G.enemies,wiz=players.filter(p=>p.hero=
   collide(e,D0.r);
   if(!e.pass&&!D0.death)for(const w of wiz){const dx=e.x-w.x,dz2=e.z-w.z,d=Math.hypot(dx,dz2);if(d<3.6&&d>1e-4){e.x=w.x+dx/d*3.6;e.z=w.z+dz2/d*3.6;collide(e,D0.r)}}
   e.moving+=((Math.hypot(e.x-ox,e.z-oz)>dt*.5?1:0)-e.moving)*Math.min(1,dt*8);
-  for(const p of players){if(!p.alive)continue;const dx=e.x-p.x,dz2=e.z-p.z,d=Math.hypot(dx,dz2),m=p.H.rad+D0.r;if(d>=m)continue;
+  if(!(D0.water&&(e.hidden||G.time-(e.riseAt||-9)<1)))for(const p of players){if(!p.alive)continue;const dx=e.x-p.x,dz2=e.z-p.z,d=Math.hypot(dx,dz2),m=p.H.rad+D0.r;if(d>=m)continue;
    if(D0.death){const am=70*dt;hurtPlayer(p,am/G.dmgScale);e.drained+=am;if(Math.random()<.3)spark(p.x,1.3,p.z,0xff2020,.4);sfx('drain');if(e.drained>=220){e.dead=true;burst(e.x,1.5,e.z,0x403848,20,3)}if(d>1e-4){e.x=p.x+dx/d*m;e.z=p.z+dz2/d*m}break}
    if(D0.kami){hurtPlayer(p,D0.touch);e.dead=true;burst(e.x,1.2,e.z,D0.burst,8);break}
    if(e.atk<=0){hurtPlayer(p,D0.touch);e.atk=.75}if(d>1e-4){e.x=p.x+dx/d*m;e.z=p.z+dz2/d*m}}
@@ -1102,14 +1106,15 @@ function update(dt){
  const hs=players.filter(p=>!p.ai);if(!G.over&&hs.length&&hs.every(p=>!p.alive))gameOver();
 }
 const ITEMGLOW={potion:[.25,.45,1],key:[.9,.7,.25],treasure:[.9,.7,.2],charm:[1,.3,.6],food:[.5,.3,.1]};
-function flushAll(){for(const k in POOLS)POOLS[k].n=0;for(const k in GL)GL[k].n=0;for(const k in MPOOL)MPOOL[k].n=0;
+function flushAll(){for(const k in POOLS)POOLS[k].n=0;for(const k in GL)GL[k].n=0;for(const k in MPOOL)MPOOL[k].n=0;if(EELTOP)for(const P of EELTOP)P.n=0;
  const put=(k,x,y,z,ry,rx,rz,s,sz,col)=>{const P=POOLS[k];if(P.n>=P.max)return;D.position.set(x,y,z);D.rotation.set(rx,ry,rz);D.scale.set(s,s,s*sz);D.updateMatrix();P.m.setMatrixAt(P.n,D.matrix);P.m.setColorAt(P.n,TC.setHex(col).convertSRGBToLinear());P.n++};
  const t=G.time;
  for(const e of G.enemies){if(e.dead)continue;const D0=EDEF[e.type];
+  if(D0.water&&drawWater(e,t))continue;
   if(e.hidden){if(Math.random()<.3)GL.spark.add(e.x+rf(-.4,.4),rf(.3,2),e.z+rf(-.4,.4),.5,.25,.7);continue}
   const fl=e.type==='ghost'||e.type==='death',y=fl?.12+Math.sin(t*3+e.ph)*.12:Math.abs(Math.sin(t*9+e.ph))*.08*e.moving;
   const rz=fl?Math.sin(t*2+e.ph)*.08:Math.sin(t*9+e.ph)*.09*e.moving,rx=.12*e.moving+(e.flash>0?-.25:0);
-  const MP=MPOOL[e.type];if(MP&&MP.ok){if(MP.n<MP.max){const i=MP.n++;D.position.set(e.x,(MSPR[e.type].f?.15+Math.sin(t*2.6+e.ph)*.12:Math.abs(Math.sin(t*8+e.ph))*.05*e.moving),e.z);D.rotation.set(0,0,0);D.scale.set(1,1,1);D.updateMatrix();MP.m.setMatrixAt(i,D.matrix);MP.yaw.array[i]=e.rot;const fl=e.flash>0;MP.tint.array[i*3]=fl?1.3:.88;MP.tint.array[i*3+1]=fl?.45:.84;MP.tint.array[i*3+2]=fl?.4:.82}continue}
+  const MP=MPOOL[e.type];if(MP&&MP.ok){if(MP.n<MP.max){const i=MP.n++;D.position.set(e.x,D0.water?waterY(e,t):(MSPR[e.type].f?.15+Math.sin(t*2.6+e.ph)*.12:Math.abs(Math.sin(t*8+e.ph))*.05*e.moving),e.z);D.rotation.set(0,0,0);D.scale.set(1,1,1);D.updateMatrix();MP.m.setMatrixAt(i,D.matrix);MP.yaw.array[i]=e.rot;const fl=e.flash>0;MP.tint.array[i*3]=fl?1.3:.88;MP.tint.array[i*3+1]=fl?.45:.84;MP.tint.array[i*3+2]=fl?.4:.82}continue}
   put(e.type,e.x,y,e.z,e.rot,rx,rz,1,1,e.flash>0?0xff6050:0xffffff);
   const s=Math.sin(e.rot),c=Math.cos(e.rot),ey=y+D0.ey,ez=D0.ez,ex=D0.ex,col=D0.eye,br=e.type==='ghost'?1.4:1.2;
   GL.eye.add(e.x+s*ez+c*ex,ey,e.z+c*ez-s*ex,col[0]*br,col[1]*br,col[2]*br);GL.eye.add(e.x+s*ez-c*ex,ey,e.z+c*ez+s*ex,col[0]*br,col[1]*br,col[2]*br);
@@ -1129,6 +1134,7 @@ function flushAll(){for(const k in POOLS)POOLS[k].n=0;for(const k in GL)GL[k].n=
  for(const p of players)if(p.ai&&p.alive){const c=RGB(parseInt(p.H.css.slice(1),16));GL.orb.add(p.x,2.55,p.z,c[0]*.5,c[1]*.5,c[2]*.5)}
  if(G.exit){GL.halo.add(G.exit.x,.8,G.exit.z,.25,.9,.45);GL.halo.add(G.exit.x,2.4,G.exit.z,.12,.45,.22)}
  for(const k in POOLS){const P=POOLS[k];P.m.count=P.n;P.m.instanceMatrix.needsUpdate=true;if(P.m.instanceColor)P.m.instanceColor.needsUpdate=true}
+ if(EELTOP)for(const P of EELTOP){P.m.count=P.n;P.m.instanceMatrix.needsUpdate=true}
  for(const k in MPOOL){const P=MPOOL[k];P.m.count=P.n;P.m.instanceMatrix.needsUpdate=true;P.yaw.needsUpdate=true;P.tint.needsUpdate=true}
  for(const k in GL)GL[k].end()}
 
@@ -1195,11 +1201,11 @@ const NET={vis:'wifi',p2p:false,room:null,nr:null,mode:null,code:null,myId:'c'+M
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const b64=u8=>{let s='';for(let i=0;i<u8.length;i++)s+=String.fromCharCode(u8[i]);return btoa(s)};
 const unb64=s=>{try{const b=atob(s),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u}catch(e){return new Uint8Array(0)}};
-const ET=['ghost','grunt','demon','lobber','sorcerer','death','gargoyle','naga'],PK=['axe','axe5','arrow','knife','knife5','bolt','fire','rock'],PSPD=[22,22,46,35,35,36,13,9],IT=['food','potion','charm','key','treasure'];
+const ET=['ghost','grunt','demon','lobber','sorcerer','death','gargoyle','naga','eel','drowned','drownbrute'],PK=['axe','axe5','arrow','knife','knife5','bolt','fire','rock'],PSPD=[22,22,46,35,35,36,13,9],IT=['food','potion','charm','key','treasure'];
 const q11=v=>clamp(Math.round(v*8),0,2047),angQ=(a,n)=>((Math.round(a/TAU*n)%n)+n)%n;
 function pack(list,fn){const u=new Uint8Array(list.length*4),dv=new DataView(u.buffer);list.forEach((o,i)=>dv.setUint32(i*4,fn(o)>>>0));return b64(u)}
 function unpack(s,fn){const u=unb64(typeof s==='string'?s:''),dv=new DataView(u.buffer),out=[];for(let i=0;i+3<u.length;i+=4)out.push(fn(dv.getUint32(i)));return out}
-const packE=e=>q11(e.x)<<21|q11(e.z)<<10|angQ(e.rot,32)<<5|Math.max(0,ET.indexOf(e.type))<<2|(e.flash>0?2:0)|(e.hidden?1:0);
+const packE=e=>q11(e.x)<<21|q11(e.z)<<10|angQ(e.rot,16)<<6|Math.max(0,ET.indexOf(e.type))<<2|(e.flash>0?2:0)|(e.hidden?1:0);
 function hostSnap(){const rem=players.filter(p=>p.net&&p.alive);let E=G.enemies.filter(e=>!e.dead);
  if(E.length>260)E=E.map(e=>[rem.length?Math.min(...rem.map(p=>(p.x-e.x)**2+(p.z-e.z)**2)):0,e]).sort((a,b)=>a[0]-b[0]).slice(0,260).map(a=>a[1]);
  const J=[];for(let bi=G.proj.length-1;bi>=0;bi--){const b=G.proj[bi];if(!b.dead&&J.length<220)J.push([b.kind==='axe'?(b.tier>=5?1:0):b.kind==='arrow'?2:b.kind==='knife'?(b.tier>=5?4:3):5,b.x,b.z,Math.atan2(b.vx,b.vz),b.tier>=3])}
@@ -1249,8 +1255,8 @@ function applySnap(s){if(!s||typeof s!=='object')return;
   let q=players.find(x=>x.puppet&&x.netId===a[0]);if(!q){const used=new Set(players.map(x=>x.i));let i=0;while(used.has(i))i++;if(i>3)continue;q=makePlayer(a[1],'puppet',i);q.netId=a[0];applyGrowth(q,true);q.grown=true;q.x=a[2]/10;q.z=a[3]/10;players.push(q);applyQuality()}
   q.tx=a[2]/10;q.tz=a[3]/10;q.yaw=a[4]/100;q.hp=a[5];q.alive=!!a[13];q.anim=a[14]/10;q.moving=a[19];q.tier=a[12];q.ai=!!a[22];q.body.root.visible=q.alive}
  for(const q of players.slice())if(q.puppet&&!seen.has(q.netId))removePlayer(q);
- const NE=unpack(s.E,v=>({x:(v>>>21)/8,z:((v>>>10)&2047)/8,rot:((v>>>5)&31)/32*TAU,type:ET[(v>>>2)&7]||'ghost',flash:v&2?.1:0,hidden:!!(v&1)}));
- const old=G.enemies;G.enemies=NE.map((n,i)=>{const o=old[i];if(o&&o.type===n.type&&Math.hypot(o.x-n.x,o.z-n.z)<3){o.tx=n.x;o.tz=n.z;o.rot=n.rot;o.flash=n.flash;o.hidden=n.hidden;return o}return Object.assign(n,{tx:n.x,tz:n.z,ph:Math.random()*6,moving:0})});
+ const NE=unpack(s.E,v=>({x:(v>>>21)/8,z:((v>>>10)&2047)/8,rot:((v>>>6)&15)/16*TAU,type:ET[(v>>>2)&15]||'ghost',flash:v&2?.1:0,hidden:!!(v&1)}));
+ const old=G.enemies;G.enemies=NE.map((n,i)=>{const o=old[i];if(o&&o.type===n.type&&Math.hypot(o.x-n.x,o.z-n.z)<3){o.tx=n.x;o.tz=n.z;o.rot=n.rot;o.flash=n.flash;if(o.hidden&&!n.hidden&&EDEF[o.type].water)surface(o);o.hidden=n.hidden;return o}return Object.assign(n,{tx:n.x,tz:n.z,ph:Math.random()*6,moving:0})});
  G.proj=unpack(s.J,v=>{const k=(v>>>7)&7,d=((v>>>1)&63)/64*TAU,kind=PK[k];return{kind:kind.replace('5',''),tier:kind.endsWith('5')?5:(v&1?3:1),x:(v>>>21)/8,z:((v>>>10)&2047)/8,y:k===7?1.6:1.25,vx:Math.sin(d)*PSPD[k],vz:Math.cos(d)*PSPD[k],spin:Math.random()*6,scale:1.2,tint:k===5?0xbfe4ff:0xffffff,glow:v&1?0x9fe8ff:0}});
  const NI=unpack(s.I,v=>({x:(v>>>21)/8,z:((v>>>10)&2047)/8,type:IT[v&7]||'treasure'}));
  for(let i=0;i<Math.max(NI.length,G.items.length);i++){const n=NI[i],o=G.items[i];
@@ -1474,6 +1480,7 @@ function floodTick(dt){const f=G.flood;if(!f)return;if(G.net!=='client'&&G.trans
  f.mesh.position.y=f.h;if(f.tex.offset){f.tex.offset.x=(G.time*.015)%1;f.tex.offset.y=(G.time*.01)%1}
  const marks=[[.45,'The water is at your knees'],[.85,'The water is at your waist. You’re slowing down'],[1.2,'The water is at your chest! Hurry!']];
  if(f.said<marks.length&&f.h>=marks[f.said][0]){for(const q of humans()){pmsg(q,marks[f.said][1]);rumble(q,180,.4)}say(marks[f.said][1],true);f.said++}
+ if(G.net!=='client'&&G.transT<=0)waterSpawn(f,dt);
  if(f.h>.3&&Math.random()<dt*3)for(const q of players)if(q.alive&&q.moving>.5)spark(q.x+rf(-.5,.5),f.h+.05,q.z+rf(-.5,.5),0xbfeaff,.4)}
 
 // ---------- VR comfort: turning style and a darkened edge while moving
@@ -1485,6 +1492,26 @@ function vigTick(p){if(!p||!p.cam)return;if(!VIG){const c=document.createElement
   VIG=new THREE.Mesh(new THREE.PlaneGeometry(2.2,2.2),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthTest:false,depthWrite:false,fog:false,opacity:0}));VIG.renderOrder=998;VIG.position.set(0,0,-.5);VIG.frustumCulled=false}
  if(VIG.parent!==p.cam)p.cam.add(VIG);const want=COMF.vig&&renderer.xr.isPresenting&&!G.paused?clamp((p.moving||0)+(p.dash>0?1:0),0,1)*.9:0;VIG.material.opacity+=(want-VIG.material.opacity)*.2;VIG.visible=VIG.material.opacity>.02}
 
+// ---------- water monsters on flood levels: electric eels and drowned skeletons rise from the water (no generators)
+// three swim frames: curved, straight, curved the other way, straight ... so he wiggles as he swims
+const EELTOP=(()=>{try{const fr=[];for(const k of [1,0,2,0]){}for(const k of [0,1,2]){const geo=new THREE.PlaneGeometry(1.15,2.3),mat=new THREE.MeshBasicMaterial({transparent:true,opacity:.85,depthWrite:false,fog:true,color:0x9fe8c8}),m=new THREE.InstancedMesh(geo,mat,160);m.count=0;m.frustumCulled=false;m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);scene.add(m);
+  const P={m,n:0,max:160,ok:false};texLoader.load('sprites/m_eel_top'+k+'.webp',t=>{t.encoding=THREE.sRGBEncoding;mat.map=t;mat.needsUpdate=true;P.ok=true},undefined,()=>{});fr.push(P)}return fr}catch(e){return null}})();
+const EELSEQ=[1,0,2,0];
+function surface(e){e.riseAt=G.time;const h=G.flood?G.flood.h:0;burst(e.x,h+.1,e.z,0xbfeaff,18,3.5);ring(e.x,e.z,1.3,0xbfeaff);if(G.time-(G.splashT||0)>.25){G.splashT=G.time;sfx('dash')}}
+function waterY(e,t){const h=G.flood?G.flood.h:0;if(e.type==='eel')return Math.max(0,h-.62)+Math.sin(t*5+e.ph)*.12;const r=clamp((t-(e.riseAt||-9))/1,0,1);return -(1-r)*(1-r)*2.6}
+function drawWater(e,t){if(!e.hidden)return false;const h=G.flood?G.flood.h:.3;
+ if(e.type==='eel'){const P=EELTOP&&EELTOP[EELSEQ[Math.floor(t*(e.moving>.3?7:3)+e.ph*2)%4]];if(P&&P.ok&&P.n<P.max){D.position.set(e.x,h-.07,e.z);D.rotation.set(-PI/2,0,e.rot);D.scale.set(1,1,1);D.updateMatrix();P.m.setMatrixAt(P.n++,D.matrix)}if(Math.random()<.25)GL.spark.add(e.x+rf(-.3,.3),h+.03,e.z+rf(-.3,.3),.3,1,.6);return true}
+ if(Math.random()<.5)GL.spark.add(e.x+rf(-.6,.6),h+.04,e.z+rf(-.6,.6),.55,.8,.85);if(Math.random()<.06)ring(e.x,e.z,.6+Math.random()*.8,0x9fd8e8);return true}
+function waterAI(e,dt){const f=G.flood,n=nearest(e);
+ if(e.type==='eel'){if(e.hidden){if(n&&n.d<4.5){e.hidden=false;surface(e)}}else if(n&&n.d>9.5&&G.time-(e.riseAt||0)>2.5){e.hidden=true;burst(e.x,(f?f.h:0)+.1,e.z,0x9fffc0,8,2)}return false}
+ if(e.hidden){e.wait=(e.wait||1.3)-dt;if(e.wait<=0){e.hidden=false;surface(e)}return true}
+ return G.time-(e.riseAt||-9)<1}
+function waterSpawn(f,dt){if(f.h<.35)return;const deep=clamp((f.h-.35)/(f.max-.35),0,1),rate=(.3+2.4*Math.pow(deep,1.4))*(1+Math.max(0,G.level-22)*.03);
+ if(Math.random()>rate*dt)return;let wm=0;for(const e of G.enemies)if(!e.dead&&EDEF[e.type].water)wm++;if(wm>=18+deep*40||G.enemies.length>=G.cap)return;
+ const alive=players.filter(p=>p.alive);if(!alive.length)return;const p=alive[Math.floor(Math.random()*alive.length)];
+ for(let k=0;k<12;k++){const a=Math.random()*TAU,d=rf(5,13),x=p.x+Math.cos(a)*d,z=p.z+Math.sin(a)*d;if(blockedAt(x,z,.6))continue;
+  const r=Math.random(),type=r<.35?'eel':r<.8?'drowned':'drownbrute';const before=G.enemies.length;spawnEnemy(type,x,z);const e=G.enemies[before];if(e&&e.type===type){e.hidden=true;e.wait=rf(1,1.8)}return}}
+
 // ---------- loading screen, safety warnings, reduce-flashing option
 const SAFE={on:false};
 function setSafe(v){SAFE.on=!!v;document.body.classList.toggle('safe',SAFE.on);for(const id of ['bootSafe','safeFx']){const c=document.getElementById(id);if(c)c.checked=SAFE.on}try{localStorage.setItem('sgvr_safe',SAFE.on?'1':'0')}catch(x){}}
@@ -1495,7 +1522,7 @@ function setSafe(v){SAFE.on=!!v;document.body.classList.toggle('safe',SAFE.on);f
  const el=document.getElementById('boot');if(!el)return;
  for(const i of el.querySelectorAll('.bheroes i'))i.style.backgroundImage=`url(sprites/${i.dataset.s}.webp)`;
  const fp=['barb_hold_iron','barb_throw','barb_rune','barb_rune_ghost','barb_skull','barb_skull_smoke','barb_skull_ghost','elf_draw','elf_release','elf_draw_magic','elf_release_magic','valk_hold','valk_hold_glow','valk_hold_spirit','valk_throw','valk_empty','wiz_L_idle','wiz_L_glow','wiz_S_idle','wiz_S_glow'];
- const sp=['angel','angel_face','elf','barbarian','wizard','valkyrie','valkyrie_throw','m_ghost','m_grunt','m_demon','m_gargoyle','m_lobber','m_sorcerer','m_naga','m_death','m_knife','m_knife5'];
+ const sp=['angel','angel_face','elf','barbarian','wizard','valkyrie','valkyrie_throw','m_ghost','m_grunt','m_demon','m_gargoyle','m_lobber','m_sorcerer','m_naga','m_death','m_knife','m_knife5','m_eel','m_eel_top0','m_eel_top1','m_eel_top2','m_drowned','m_drownbrute'];
  const urls=[...fp.map(n=>'fp/'+n+'.webp'),...sp.map(n=>'sprites/'+n+'.webp')];
  const bar=document.getElementById('bootBar'),txt=document.getElementById('bootTxt'),go=document.getElementById('bootGo');let done=0,ready=false;
  const finish=()=>{if(ready)return;ready=true;bar.style.width='100%';txt.textContent='Ready. Please read the warnings below.';go.disabled=false;go.textContent='I understand — continue'};
