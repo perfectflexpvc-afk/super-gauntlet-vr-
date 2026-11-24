@@ -499,8 +499,15 @@ const RIFF=[40,40,52,40,43,43,55,43,38,38,50,38,45,47,48,47];
 // your "Dungeon Master" soundtrack: one part per level, at 40% volume so the sound effects stay clear
 const SONGS=[1,2,3,4].map(n=>`music/dungeon-master-${n}.mp3`),BGM=new Audio();BGM.loop=true;BGM.preload='auto';BGM.volume=.4;let bgmSrc='',bgmT=-9999;
 const songFor=()=>G.treasure?G.level%SONGS.length:(G.level-1)%SONGS.length;
+// angel levels play "Healing Waters" instead, faint far away and loud by her spring, and from her direction
+const ANGEL_SONG='music/healing-waters.mp3';let BGMR=null;const _ad=new THREE.Vector3();
+function bgmRoute(){if(BGMR!==null||!AC)return;try{const s=AC.createMediaElementSource(BGM),g=AC.createGain(),pan=AC.createStereoPanner?AC.createStereoPanner():null;if(pan){s.connect(pan);pan.connect(g)}else s.connect(g);g.connect(AC.destination);g.gain.value=.4;BGM.volume=1;BGMR={g,pan}}catch(e){BGMR=false}}
+function musicMix(){let vol=.4,pan=0;const pl=G&&G.pools&&G.pools[0];
+ if(pl){let best=null,bd=1e9;for(const p of players)if(p.local&&p.alive){const d=Math.hypot(p.x-pl.x,p.z-pl.z);if(d<bd){bd=d;best=p}}
+  if(best){const k=clamp(1-(bd-3)/50,0,1);vol=.05+.9*k*k;try{best.cam.getWorldDirection(_ad);const fx=_ad.x,fz=_ad.z,fl=Math.hypot(fx,fz)||1,ux=(pl.x-best.x)/(bd||1),uz=(pl.z-best.z)/(bd||1);pan=bd>2.5?clamp((ux*(-fz/fl)+uz*(fx/fl))*.85,-.85,.85):0}catch(e){}}else vol=.05}
+ bgmRoute();if(BGMR){const g=BGMR.g.gain;g.value+=(vol-g.value)*.06;if(BGMR.pan){const pp=BGMR.pan.pan;pp.value+=(pan-pp.value)*.1}}else BGM.volume=clamp(BGM.volume+(vol-BGM.volume)*.06,0,1)}
 function music(){const want=musicOn&&G&&!G.demo&&!G.over&&!G.paused&&!!G.lg;if(!want){if(!BGM.paused)BGM.pause();return}
- const src=SONGS[songFor()];if(src!==bgmSrc){bgmSrc=src;BGM.src=src;bgmT=-9999}
+ musicMix();const src=G.pools&&G.pools.length?ANGEL_SONG:SONGS[songFor()];if(src!==bgmSrc){bgmSrc=src;BGM.src=src;bgmT=-9999}
  if(BGM.paused&&performance.now()-bgmT>1500){bgmT=performance.now();try{const r=BGM.play();if(r&&r.catch)r.catch(()=>{})}catch(e){}}}
 function unlockMusic(){try{BGM.src=bgmSrc=SONGS[0];const r=BGM.play();if(r&&r.then)r.then(()=>{if(!G||G.demo)BGM.pause()}).catch(()=>{})}catch(e){}}
 let sayT=0;function say(t,force){const n=performance.now();if(!force&&n-sayT<2500)return;sayT=n;try{const u=new SpeechSynthesisUtterance(t);u.rate=.9;u.pitch=.5;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
