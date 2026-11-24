@@ -1534,6 +1534,10 @@ function setSafe(v){SAFE.on=!!v;document.body.classList.toggle('safe',SAFE.on);f
  for(const u of urls){const im=new Image();im.onload=im.onerror=step;im.src=u}
  setTimeout(finish,15000);
  go.addEventListener('click',()=>{if(!ready)return;try{initAudio()}catch(x){}BOOTDONE=true;el.hidden=true;el.style.display='none';const b=document.getElementById('startBtn');if(b)b.focus()});
+ // reopening the game (a phone or headset waking the old page, or coming back after a while) shows the warnings again
+ const reshow=()=>{if(G&&!G.demo&&!G.over)return;el.hidden=false;el.style.display='';BOOTDONE=false;el.scrollTop=0;if(ready)go.disabled=false};
+ addEventListener('pageshow',e=>{if(e.persisted)location.reload()});
+ let hidAt=0;document.addEventListener('visibilitychange',()=>{if(document.hidden)hidAt=Date.now();else if(hidAt&&Date.now()-hidAt>60000)reshow()});
 })();
 
 //__DBG__
