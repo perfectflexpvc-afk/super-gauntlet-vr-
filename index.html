@@ -509,8 +509,8 @@ function musicMix(){let vol=.4,pan=0;const pl=G&&G.pools&&G.pools[0];
 // the menu's looping "ahh": starts after the warning screen, gapless, fades out when the dungeon music begins
 let BOOTDONE=!document.getElementById('boot');const MENU={buf:null,src:null,g:null,loading:false};
 function menuLoopTick(){if(!AC)return;const want=musicOn&&BOOTDONE&&!$('#menu').hidden;
- if(want&&!MENU.buf&&!MENU.loading){MENU.loading=true;fetch('music/menu-loop.mp3').then(r=>r.arrayBuffer()).then(b=>new Promise((ok,no)=>{const p=AC.decodeAudioData(b,ok,no);if(p&&p.then)p.then(ok,no)})).then(buf=>{MENU.buf=buf}).catch(()=>{MENU.loading=false})}
- if(want&&MENU.buf&&!MENU.src){if(!MENU.g){MENU.g=AC.createGain();MENU.g.gain.value=0;MENU.g.connect(AC.destination)}const s=AC.createBufferSource();s.buffer=MENU.buf;s.loop=true;s.connect(MENU.g);s.start();MENU.src=s}
+ if(want&&!MENU.buf&&!MENU.loading){MENU.loading=true;fetch('music/menu-loop.wav').then(r=>r.arrayBuffer()).then(b=>new Promise((ok,no)=>{const p=AC.decodeAudioData(b,ok,no);if(p&&p.then)p.then(ok,no)})).then(buf=>{MENU.buf=buf}).catch(()=>{MENU.loading=false})}
+ if(want&&MENU.buf&&!MENU.src){if(!MENU.g){MENU.g=AC.createGain();MENU.g.gain.value=0;MENU.g.connect(AC.destination)}const s=AC.createBufferSource();s.buffer=MENU.buf;s.loop=true;s.loopStart=3.0;s.loopEnd=MENU.buf.duration;s.connect(MENU.g);s.start();MENU.src=s}
  if(MENU.g){const t=want?.55:0;MENU.g.gain.value+=(t-MENU.g.gain.value)*(want?.04:.08);if(!want&&MENU.src&&MENU.g.gain.value<.01){try{MENU.src.stop()}catch(e){}MENU.src=null}}}
 function music(){menuLoopTick();const want=musicOn&&G&&!G.demo&&!G.over&&!G.paused&&!!G.lg;if(!want){if(!BGM.paused)BGM.pause();return}
  musicMix();const src=G.pools&&G.pools.length?ANGEL_SONG:SONGS[songFor()];if(src!==bgmSrc){bgmSrc=src;BGM.src=src;bgmT=-9999}
