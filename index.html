@@ -854,7 +854,9 @@ function readInput(p,dt){
  return o;
 }
 let padStart=[];
-function pollPads(){const pads=navigator.getGamepads?navigator.getGamepads():[];let n=0,names=[];for(let i=0;i<pads.length;i++){const gp=pads[i];if(!gp)continue;n++;names.push(/054c|dualshock|wireless controller|playstation/i.test(gp.id)?'PS4':'gamepad');const s=!!(gp.buttons[9]&&gp.buttons[9].pressed);if(s&&!padStart[i]&&running())setPause(!G.paused);padStart[i]=s}
+function pollPads(){const pads=navigator.getGamepads?navigator.getGamepads():[];let n=0,names=[];for(let i=0;i<pads.length;i++){const gp=pads[i];if(!gp)continue;n++;names.push(/054c|dualshock|wireless controller|playstation/i.test(gp.id)?'PS4':'gamepad');const s=!!(gp.buttons[9]&&gp.buttons[9].pressed);if(s&&!padStart[i]&&running())setPause(!G.paused);padStart[i]=s;
+  // using a controller on a phone hides the touch buttons; touching the screen brings them back
+  if(G&&!G.demo&&!renderer.xr.isPresenting){const hs=humans();if(hs.length===1&&hs[0].ctrl==='touch'&&(gp.buttons.some(b=>b&&b.pressed)||gp.axes.some(a=>Math.abs(a)>.5))){hs[0].ctrl='gp'+i;showTouch()}}}
  if(n!==pollPads.n){pollPads.n=n;$('#padNote').textContent=n?`${n} controller${n>1?'s':''} ready (${names.join(', ')})`:'No controllers found yet: press a button on one to wake it.'}}
 
 // ---------- computer allies
@@ -1297,7 +1299,7 @@ const TOUCH={mx:0,my:0,dx:0,dy:0,fire:false,e:{}};
  const le=e=>{if(e.pointerId===lid)lid=null};lk.addEventListener('pointerup',le);lk.addEventListener('pointercancel',le);
  for(const b of document.querySelectorAll('#tBtns .tb')){const k=b.dataset.b;b.addEventListener('pointerdown',e=>{e.preventDefault();initAudio();if(k==='fire')TOUCH.fire=true;else TOUCH.e[k]=true});const up=()=>{if(k==='fire')TOUCH.fire=false};b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('pointerleave',up)}
  $('#tPause').addEventListener('click',()=>{if(running())setPause(true)})}
-addEventListener('touchstart',()=>{const hs=typeof humans==='function'&&G&&!G.demo?humans():[];if(hs.length===1&&hs[0].ctrl==='km'&&!renderer.xr.isPresenting){hs[0].ctrl='touch';if(slots[0].ctrl==='km'){slots[0].ctrl='touch';try{saveSlots()}catch(e){}}showTouch()}},{passive:true});
+addEventListener('touchstart',()=>{const hs=typeof humans==='function'&&G&&!G.demo?humans():[];if(hs.length===1&&(hs[0].ctrl==='km'||hs[0].ctrl.startsWith('gp'))&&!renderer.xr.isPresenting){hs[0].ctrl='touch';if(slots[0].ctrl==='km'){slots[0].ctrl='touch';try{saveSlots()}catch(e){}}showTouch()}},{passive:true});
 function showTouch(){const p=humans()[0];const on=!!(p&&p.ctrl==='touch'&&running()&&!(G&&G.paused)&&!renderer.xr.isPresenting);$('#touch').hidden=!on;document.body.classList.toggle('touching',on);if(on){$('#tBtns [data-b=a2]').hidden=p.hero!=='wizard';$('#tBtns [data-b=a1]').textContent=p.H.a1}}
 
 // ---------- menu
