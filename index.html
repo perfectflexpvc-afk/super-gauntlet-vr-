@@ -1089,7 +1089,7 @@ function nextLevel(){if(G.treasure){G.treasure=false;G.level++}else if(G.level%2
  for(const p of players){if(!p.alive){p.alive=true;p.hp=Math.max(p.hp,p.max*.5);p.body.root.visible=!(p.i===0&&renderer.xr.isPresenting);p.shield=p.smax||0}p.dash=0}buildLevel();$('#timer').hidden=!G.treasure}
 function timeUp(){G.timer=0;for(const p of players)p.score-=p.tgold;banner("Time's up!",'The treasure fades away',1.6);G.transT=1.6}
 function gameOver(){G.over=true;advertise();showTouch();if(document.pointerLockElement)document.exitPointerLock();say('Game over',true);
- setTimeout(()=>{$('#overSub').textContent=`The party fell on ${G.treasure?'a treasure room after level '+G.level:'level '+G.level}.`;$('#finalScores').innerHTML=players.map(p=>`<tr><td style="color:${p.H.css}">${p.H.name}${p.ai?' (ally)':''} · ${p.H.tiers[p.tier-1]}</td><td>${p.score.toLocaleString()} gold · ${p.kills} foes</td></tr>`).join('');$('#over').hidden=false;$('#againBtn').focus()},1400)}
+ setTimeout(()=>{$('#overSub').textContent=`The party fell on ${G.treasure?'a treasure room after level '+G.level:'level '+G.level}.`;$('#finalScores').innerHTML=players.map(p=>`<tr><td style="color:${p.H.css}">${p.H.name}${p.ai?' (ally)':''} · ${p.H.tiers[p.tier-1]}</td><td>${p.score.toLocaleString()} gold · ${p.kills} foes</td></tr>`).join('');$('#over').hidden=false;$('#againBtn').focus();if(renderer.xr.isPresenting){try{renderer.xr.getSession().end()}catch(e){}}},1400)}
 function update(dt){
  G.time+=dt;if(G.bannerT>0){G.bannerT-=dt;if(G.bannerT<=0)$('#banner').classList.remove('show')}
  if(G.demo){const s=G.start;menuCam.position.set(s.x,1.8,s.z);menuCam.rotation.set(0,G.time*.12,0);animItems(dt);updateParts(dt);return}
@@ -1178,7 +1178,7 @@ if(navigator.xr&&navigator.xr.isSessionSupported)navigator.xr.isSessionSupported
 
 // ---------- render loop
 function render(){renderer.shadowMap.needsUpdate=true;
- if(renderer.xr.isPresenting){for(const k in GL)GL[k].scale(1);renderer.setScissorTest(false);if(players[0]){faceBills(players[0].cam);vrArtTick(players[0]);vigTick(players[0])}renderer.render(scene,players[0]?players[0].cam:menuCam);return}
+ if(renderer.xr.isPresenting){for(const k in GL)GL[k].scale(1);renderer.setScissorTest(false);if(players[0]){faceBills(players[0].cam);vrArtTick(players[0]);vigTick(players[0]);vrDeadTick(players[0])}renderer.render(scene,players[0]?players[0].cam:menuCam);return}
  const W=innerWidth,H=innerHeight,hs=humans();
  if(!G||G.demo||!hs.length||!G.lg){for(const k in GL)GL[k].scale(1);renderer.setScissorTest(false);renderer.setViewport(0,0,W,H);menuCam.aspect=W/H;menuCam.updateProjectionMatrix();renderer.render(scene,menuCam);return}
  const R=rects(hs.length);renderer.setScissorTest(true);
@@ -1515,6 +1515,13 @@ function waterSpawn(f,dt){if(f.h<.35)return;const deep=clamp((f.h-.35)/(f.max-.3
  const alive=players.filter(p=>p.alive);if(!alive.length)return;const p=alive[Math.floor(Math.random()*alive.length)];
  for(let k=0;k<12;k++){const a=Math.random()*TAU,d=rf(5,13),x=p.x+Math.cos(a)*d,z=p.z+Math.sin(a)*d;if(blockedAt(x,z,.6))continue;
   const r=Math.random(),type=r<.35?'eel':r<.8?'drowned':'drownbrute';const before=G.enemies.length;spawnEnemy(type,x,z);const e=G.enemies[before];if(e&&e.type===type){e.hidden=true;e.wait=rf(1,1.8)}return}}
+
+let VRDEAD=null;
+function vrDeadTick(p){const show=!!(p&&!p.alive&&G&&!G.over&&renderer.xr.isPresenting);if(!show){if(VRDEAD)VRDEAD.visible=false;return}
+ if(!VRDEAD){const c=document.createElement('canvas');c.width=1024;c.height=300;const x=c.getContext('2d');x.fillStyle='rgba(40,0,0,.82)';x.fillRect(0,0,1024,300);x.strokeStyle='#ff9a70';x.lineWidth=6;x.strokeRect(3,3,1018,294);
+  x.textAlign='center';x.fillStyle='#ffc35a';x.font='bold 70px serif';x.fillText('You have fallen',512,110);x.fillStyle='#fff1d6';x.font='34px sans-serif';x.fillText('You come back on the next level if a friend reaches the exit.',512,180);x.fillText('Click the left stick for the pause menu.',512,235);
+  VRDEAD=new THREE.Mesh(new THREE.PlaneGeometry(1.1,.32),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthTest:false,fog:false}));VRDEAD.renderOrder=997;VRDEAD.position.set(0,-.05,-1.4);VRDEAD.frustumCulled=false}
+ if(VRDEAD.parent!==p.cam)p.cam.add(VRDEAD);VRDEAD.visible=true}
 
 // ---------- loading screen, safety warnings, reduce-flashing option
 const SAFE={on:false};
