@@ -506,7 +506,13 @@ function musicMix(){let vol=.4,pan=0;const pl=G&&G.pools&&G.pools[0];
  if(pl){let best=null,bd=1e9;for(const p of players)if(p.local&&p.alive){const d=Math.hypot(p.x-pl.x,p.z-pl.z);if(d<bd){bd=d;best=p}}
   if(best){const k=clamp(1-(bd-3)/50,0,1);vol=.05+.9*k*k;try{best.cam.getWorldDirection(_ad);const fx=_ad.x,fz=_ad.z,fl=Math.hypot(fx,fz)||1,ux=(pl.x-best.x)/(bd||1),uz=(pl.z-best.z)/(bd||1);pan=bd>2.5?clamp((ux*(-fz/fl)+uz*(fx/fl))*.85,-.85,.85):0}catch(e){}}else vol=.05}
  bgmRoute();if(BGMR){const g=BGMR.g.gain;g.value+=(vol-g.value)*.06;if(BGMR.pan){const pp=BGMR.pan.pan;pp.value+=(pan-pp.value)*.1}}else BGM.volume=clamp(BGM.volume+(vol-BGM.volume)*.06,0,1)}
-function music(){const want=musicOn&&G&&!G.demo&&!G.over&&!G.paused&&!!G.lg;if(!want){if(!BGM.paused)BGM.pause();return}
+// the menu's looping "ahh": starts after the warning screen, gapless, fades out when the dungeon music begins
+let BOOTDONE=!document.getElementById('boot');const MENU={buf:null,src:null,g:null,loading:false};
+function menuLoopTick(){if(!AC)return;const want=musicOn&&BOOTDONE&&!$('#menu').hidden;
+ if(want&&!MENU.buf&&!MENU.loading){MENU.loading=true;fetch('music/menu-loop.mp3').then(r=>r.arrayBuffer()).then(b=>new Promise((ok,no)=>{const p=AC.decodeAudioData(b,ok,no);if(p&&p.then)p.then(ok,no)})).then(buf=>{MENU.buf=buf}).catch(()=>{MENU.loading=false})}
+ if(want&&MENU.buf&&!MENU.src){if(!MENU.g){MENU.g=AC.createGain();MENU.g.gain.value=0;MENU.g.connect(AC.destination)}const s=AC.createBufferSource();s.buffer=MENU.buf;s.loop=true;s.connect(MENU.g);s.start();MENU.src=s}
+ if(MENU.g){const t=want?.55:0;MENU.g.gain.value+=(t-MENU.g.gain.value)*(want?.04:.08);if(!want&&MENU.src&&MENU.g.gain.value<.01){try{MENU.src.stop()}catch(e){}MENU.src=null}}}
+function music(){menuLoopTick();const want=musicOn&&G&&!G.demo&&!G.over&&!G.paused&&!!G.lg;if(!want){if(!BGM.paused)BGM.pause();return}
  musicMix();const src=G.pools&&G.pools.length?ANGEL_SONG:SONGS[songFor()];if(src!==bgmSrc){bgmSrc=src;BGM.src=src;bgmT=-9999}
  if(BGM.paused&&performance.now()-bgmT>1500){bgmT=performance.now();try{const r=BGM.play();if(r&&r.catch)r.catch(()=>{})}catch(e){}}}
 function unlockMusic(){try{BGM.src=bgmSrc=SONGS[0];const r=BGM.play();if(r&&r.then)r.then(()=>{if(!G||G.demo)BGM.pause()}).catch(()=>{})}catch(e){}}
@@ -1496,7 +1502,7 @@ function setSafe(v){SAFE.on=!!v;document.body.classList.toggle('safe',SAFE.on);f
  const step=()=>{done++;bar.style.width=Math.round(done/urls.length*100)+'%';txt.textContent=`Loading heroes and monsters… ${Math.round(done/urls.length*100)}%`;if(done>=urls.length)finish()};
  for(const u of urls){const im=new Image();im.onload=im.onerror=step;im.src=u}
  setTimeout(finish,15000);
- go.addEventListener('click',()=>{if(!ready)return;try{initAudio()}catch(x){}el.hidden=true;el.style.display='none';const b=document.getElementById('startBtn');if(b)b.focus()});
+ go.addEventListener('click',()=>{if(!ready)return;try{initAudio()}catch(x){}BOOTDONE=true;el.hidden=true;el.style.display='none';const b=document.getElementById('startBtn');if(b)b.focus()});
 })();
 
 //__DBG__
