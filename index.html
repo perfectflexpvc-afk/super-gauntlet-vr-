@@ -490,7 +490,7 @@ const POOLS={
 const D=new THREE.Object3D();D.rotation.order='YXZ';const TC=new THREE.Color();
 
 // ---------- sound
-const BUILD='20261125004745',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
+const BUILD='20261125005859',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
 let AC=null,musicOn=true,musicT=0,step=0,nb=null;const lastS={};
 function initAudio(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const b=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;nb=b}if(AC.state==='suspended')AC.resume()}catch(e){AC=null}}
 function tone(f,d,type,v,f2,at){if(!AC)return;const t=at||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
@@ -1430,28 +1430,26 @@ const VRH=1.3,VRZ=-.72,VRW=VRH*16/9;// the flat screen's frame, rebuilt at arm's
 // VR Wizard: your right hand is his glowing magic hand on its sleeve; your left holds the staff on the other sleeve.
 // Each hand turns freely at the wrist with the controller, and each sleeve reaches back from the wrist toward your shoulder.
 const WH={hand:null,staff:null,sr:null,sl:null};const _wq=new THREE.Quaternion(),_wp=new THREE.Vector3(),_m4=new THREE.Matrix4(),_X=new THREE.Vector3(),_Y=new THREE.Vector3(),_Z=new THREE.Vector3(),_hd=new THREE.Vector3(),_sh=new THREE.Vector3(),_cr=new THREE.Vector3(),_wr=new THREE.Vector3(),_f=new THREE.Vector3();
-const WHD={hand:{w:.18,h:.22,g:[.6,.86],wr:[.6,.86]},staff:{w:.24,h:.62,g:[.55,.74],wr:[.31,.83]}};
+const WHD={hand:{w:.155,h:.195,g:[.731,.81],cuff:[.731,.81],dir:[.68,-.73],L:.47,T:.17},staff:{w:.2215,h:.56,g:[.55,.74],cuff:[.484,.847],dir:[-.334,-.943],L:.52,T:.19},tuck:.02};
 let p0=null;
 function wizHide(){for(const k in WH)if(WH[k])WH[k].visible=false}
 function whMesh(name,w,h,ax,ay,order){const g=new THREE.PlaneGeometry(w,h);g.translate((.5-ax)*w,(ay-.5)*h,0);const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:vrTex(name),transparent:true,alphaTest:.05,side:THREE.DoubleSide,fog:false}));m.frustumCulled=false;m.renderOrder=order;scene.add(m);return m}
 function faceBasis(pos,dir){p0.cam.getWorldPosition(_Z);_Z.sub(pos);if(_Z.lengthSq()<1e-6)_Z.set(0,0,1);_Z.normalize();_Y.copy(dir).addScaledVector(_Z,-dir.dot(_Z));if(_Y.lengthSq()<1e-6)_Y.set(0,1,0);_Y.normalize();_X.crossVectors(_Y,_Z).normalize();_m4.makeBasis(_X,_Y,_Z);return _m4}
-function placeSleeve(m,wrist,shoulder,rightArm){const L=clamp(wrist.distanceTo(shoulder),.22,.5);_f.copy(rightArm?shoulder:wrist).sub(rightArm?wrist:shoulder);
- p0.cam.getWorldPosition(_Z);_hd.copy(wrist).add(shoulder).multiplyScalar(.5);_Z.sub(_hd).normalize();_X.copy(_f).addScaledVector(_Z,-_f.dot(_Z));if(_X.lengthSq()<1e-6)_X.set(1,0,0);_X.normalize();_Y.crossVectors(_Z,_X).normalize();
- _m4.makeBasis(_X,_Y,_Z);m.quaternion.setFromRotationMatrix(_m4);m.position.copy(wrist);m.scale.set(L,L*.366,1);m.visible=true}
-function wizHandsTick(p){p0=p;if(!WH.hand){WH.hand=whMesh('vr_hand_r',WHD.hand.w,WHD.hand.h,.6,.86,986);WH.staff=whMesh('vr_staff_l',WHD.staff.w,WHD.staff.h,.55,.74,986);
-  const sg=(name,right)=>{const g=new THREE.PlaneGeometry(1,1);g.translate(right?.5:-.5,0,0);const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:vrTex(name),transparent:true,alphaTest:.05,side:THREE.DoubleSide,fog:false}));m.frustumCulled=false;m.renderOrder=984;scene.add(m);return m};
-  WH.sr=sg('vr_sleeve_r',true);WH.sl=sg('vr_sleeve_l',false)}
+// The sleeve rides on the hand picture itself and is drawn over it: its cuff covers the wrist band and it runs the way that opening faces,
+// so arm and hand always line up whichever way the hand turns.
+function whSleeve(parent,name,D,right){const g=new THREE.PlaneGeometry(1,1);g.translate(right?.47:-.47,-.212,0);
+ const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:vrTex(name),transparent:true,alphaTest:.05,side:THREE.DoubleSide,fog:false}));m.frustumCulled=false;m.renderOrder=988;
+ const k=WHD.tuck;m.scale.set(D.L,D.T,1);m.position.set((D.cuff[0]-D.g[0])*D.w-D.dir[0]*k,(D.g[1]-D.cuff[1])*D.h-D.dir[1]*k,.002);
+ m.rotation.z=right?Math.atan2(D.dir[1],D.dir[0]):Math.atan2(-D.dir[1],-D.dir[0]);parent.add(m);return m}
+function wizHandsTick(p){p0=p;if(!WH.hand){const H=WHD.hand,S=WHD.staff;WH.hand=whMesh('vr_hand_r',H.w,H.h,H.g[0],H.g[1],986);WH.staff=whMesh('vr_staff_l',S.w,S.h,S.g[0],S.g[1],986);
+  WH.sr=whSleeve(WH.hand,'vr_sleeve_r',H,true);WH.sl=whSleeve(WH.staff,'vr_sleeve_l',S,false)}
  const firing=p.anim>.05;
- p.cam.getWorldPosition(_hd);const hx=_hd.x,hy=_hd.y,hz=_hd.z;p.cam.getWorldQuaternion(_wq);_cr.set(1,0,0).applyQuaternion(_wq);_cr.y=0;if(_cr.lengthSq()<1e-6)_cr.set(1,0,0);_cr.normalize();const crx=_cr.x,crz=_cr.z;
  // right: magic hand (pivots at the wrist, points where the controller points, kicks a little when casting)
  XR.right.getWorldPosition(_wp);XR.right.getWorldQuaternion(_wq);_f.set(0,0,-1).applyQuaternion(_wq);
- WH.hand.quaternion.setFromRotationMatrix(faceBasis(_wp,_f));WH.hand.position.copy(_wp).addScaledVector(_f,firing?.03*p.anim:0);WH.hand.visible=true;
- _wr.copy(_wp);_sh.set(hx+crx*.19,hy-.27,hz+crz*.19);placeSleeve(WH.sr,_wr,_sh,true);
- // left: staff in the fist; its sleeve meets the cuff just behind the fist
+ WH.hand.quaternion.setFromRotationMatrix(faceBasis(_wp,_f));WH.hand.position.copy(_wp).addScaledVector(_f,firing?.03*p.anim:0);WH.hand.visible=true;WH.sr.visible=true;
+ // left: staff in the fist
  XR.left.getWorldPosition(_wp);XR.left.getWorldQuaternion(_wq);_f.set(0,0,-1).applyQuaternion(_wq);_f.y+=.35;_f.normalize();
- WH.staff.quaternion.setFromRotationMatrix(faceBasis(_wp,_f));if(p.anim2>0)WH.staff.rotateZ(Math.sin(p.anim2*PI)*.7);WH.staff.position.copy(_wp);WH.staff.visible=true;
- const S=WHD.staff;_wr.copy(_wp).addScaledVector(_X,(S.wr[0]-S.g[0])*S.w).addScaledVector(_Y,(S.g[1]-S.wr[1])*S.h);
- _sh.set(hx-crx*.19,hy-.27,hz-crz*.19);placeSleeve(WH.sl,_wr,_sh,false)}
+ WH.staff.quaternion.setFromRotationMatrix(faceBasis(_wp,_f));if(p.anim2>0)WH.staff.rotateZ(Math.sin(p.anim2*PI)*.7);WH.staff.position.copy(_wp);WH.staff.visible=true;WH.sl.visible=true}
 function vrArtTick(p){if(!VRART.on||!p.alive||(G&&G.paused)){vrArtHide();wizHide();return}
  if(p.hero==='wizard'&&XR.left&&XR.right){vrArtHide();wizHandsTick(p);return}wizHide();
  let P=VRART.planes[p.hero];const wiz=p.hero==='wizard',L=FPL[p.hero];
