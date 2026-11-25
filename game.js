@@ -296,7 +296,7 @@ const POOLS={
 const D=new THREE.Object3D();D.rotation.order='YXZ';const TC=new THREE.Color();
 
 // ---------- sound
-const BUILD='20261125100411',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
+const BUILD='20261125110352',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
 let AC=null,musicOn=true,musicT=0,step=0,nb=null;const lastS={};
 function initAudio(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const b=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;nb=b}if(AC.state==='suspended')AC.resume()}catch(e){AC=null}}
 function tone(f,d,type,v,f2,at){if(!AC)return;const t=at||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
@@ -755,7 +755,7 @@ const fwd=p=>({x:-Math.sin(p.yaw),z:-Math.cos(p.yaw)});
 const XR={c:[],left:null,right:null,hud:null};
 function assistDir(p,dx,dz){let best=null,bd=.32;for(const e of G.enemies){if(e.dead||e.hidden)continue;const ex=e.x-p.x,ez=e.z-p.z,d=Math.hypot(ex,ez);if(d>20||d<.5)continue;const a=Math.acos(clamp((ex*dx+ez*dz)/d,-1,1));if(a<bd&&los(p.x,p.z,e.x,e.z)){bd=a;best=[ex/d,ez/d]}}return best}
 function aim(p){if(p.net){const y=p.aimYaw!==undefined?p.aimYaw:p.yaw;let dx=-Math.sin(y),dz=-Math.cos(y);if(p.assist){const a=assistDir(p,dx,dz);if(a){dx=a[0];dz=a[1]}}const w=p.hero==='wizard'?.38:0;return{dx,dz,ox:p.x+dx*.5-dz*w,oy:p.H.eye-(w?.55:.4),oz:p.z+dz*.5+dx*w}}
- if(p.i===0&&p.local&&renderer.xr.isPresenting&&p.hero==='wizard'&&VRART.on&&XR.right){XR.right.getWorldQuaternion(_q);_v.set(0,0,-1).applyQuaternion(_q);_v.y=0;if(_v.lengthSq()>1e-4){_v.normalize();XR.right.getWorldPosition(_v2);return{dx:_v.x,dz:_v.z,ox:p.x+_v.x*.5,oy:clamp(_v2.y,.6,2),oz:p.z+_v.z*.5}}}
+ if(p.i===0&&p.local&&renderer.xr.isPresenting&&vrHandAim(p)&&VRART.on&&XR.right){XR.right.getWorldQuaternion(_q);_v.set(0,0,-1).applyQuaternion(_q);_v.y=0;if(_v.lengthSq()>1e-4){_v.normalize();XR.right.getWorldPosition(_v2);return{dx:_v.x,dz:_v.z,ox:p.x+_v.x*.5,oy:clamp(_v2.y,.6,2),oz:p.z+_v.z*.5}}}
  if(p.local&&(p.ctrl==='touch'||(p.ctrl&&p.ctrl.startsWith('gp')))){const f=fwd(p),a=assistDir(p,f.x,f.z);if(a)return{dx:a[0],dz:a[1],ox:p.x+a[0]*.5,oy:p.H.eye-.4,oz:p.z+a[1]*.5}}
  if(p.i===0&&p.local&&renderer.xr.isPresenting&&XR.right&&!VRART.on){XR.right.getWorldQuaternion(_q);_v.set(0,0,-1).applyQuaternion(_q);_v.y=0;if(_v.lengthSq()>1e-4){_v.normalize();XR.right.getWorldPosition(_v2);return{dx:_v.x,dz:_v.z,ox:p.x+_v.x*.5,oy:clamp(_v2.y,.6,2),oz:p.z+_v.z*.5}}}
  const f=fwd(p);if(p.hero==='wizard')return{dx:f.x,dz:f.z,ox:p.x+f.x*.5-f.z*.38,oy:p.H.eye-.55,oz:p.z+f.z*.5+f.x*.38};return{dx:f.x,dz:f.z,ox:p.x+f.x*.5,oy:p.H.eye-.4,oz:p.z+f.z*.5}}
@@ -1101,7 +1101,7 @@ function clientUpdate(dt){const nr=NET.nr;let hp=null;
  if(nr&&performance.now()-NET.hostSeen>(NET.lastTick<0?35000:15000)&&!G.over){G.over=true;if(document.pointerLockElement)document.exitPointerLock();showTouch();showOver('Connection lost','The host’s game ended or this device lost the connection.')}
 
  if(nr&&(NET.sendT-=dt)<=0){NET.sendT=.05;const p=players[0];let ay=p.yaw,y=p.yaw;
-  if(renderer.xr.isPresenting){p.cam.getWorldDirection(_v);y=ay=Math.atan2(-_v.x,-_v.z);if(p.hero==='wizard'&&VRART.on&&XR.right){XR.right.getWorldQuaternion(_q);_v.set(0,0,-1).applyQuaternion(_q);if(Math.hypot(_v.x,_v.z)>.01)ay=Math.atan2(-_v.x,-_v.z)}else if(XR.right&&!VRART.on){XR.right.getWorldQuaternion(_q);_v.set(0,0,-1).applyQuaternion(_q);if(Math.hypot(_v.x,_v.z)>.01)ay=Math.atan2(-_v.x,-_v.z)}}
+  if(renderer.xr.isPresenting){p.cam.getWorldDirection(_v);y=ay=Math.atan2(-_v.x,-_v.z);if(vrHandAim(p)&&VRART.on&&XR.right){XR.right.getWorldQuaternion(_q);_v.set(0,0,-1).applyQuaternion(_q);if(Math.hypot(_v.x,_v.z)>.01)ay=Math.atan2(-_v.x,-_v.z)}else if(XR.right&&!VRART.on){XR.right.getWorldQuaternion(_q);_v.set(0,0,-1).applyQuaternion(_q);if(Math.hypot(_v.x,_v.z)>.01)ay=Math.atan2(-_v.x,-_v.z)}}
   try{const r=nr.presence({me:{id:NET.myId,h:p.hero,dv:DEV,s:G.seed,x:+p.x.toFixed(2),z:+p.z.toFixed(2),y:+y.toFixed(3),ay:+ay.toFixed(3),mv:p.moving>.5?1:0,f:p.alive&&p.netFire?1:0,fc:NET.cnt.fc|0,a1:NET.cnt.a1,a2:NET.cnt.a2,pt:NET.cnt.pt,ea:NET.cnt.ea,as:(p.ctrl==='touch'||p.ctrl.startsWith('gp'))?1:0}});if(r&&r.catch)r.catch(()=>{})}catch(e){}}
  if(!G.lg)return;
  for(const p of players){if(p.puppet){const k=Math.min(1,dt*12);p.x+=(p.tx-p.x)*k;p.z+=(p.tz-p.z)*k;syncPlayer(p,false,dt)}else updatePlayer(p,dt)}
@@ -1238,7 +1238,7 @@ const VRH=1.3,VRZ=-.72,VRW=VRH*16/9;// the flat screen's frame, rebuilt at arm's
 const WH={hand:null,staff:null,sr:null,sl:null};const _wq=new THREE.Quaternion(),_wp=new THREE.Vector3(),_m4=new THREE.Matrix4(),_X=new THREE.Vector3(),_Y=new THREE.Vector3(),_Z=new THREE.Vector3(),_hd=new THREE.Vector3(),_sh=new THREE.Vector3(),_cr=new THREE.Vector3(),_wr=new THREE.Vector3(),_f=new THREE.Vector3();
 const WHD={hand:{w:.155,h:.195,g:[.731,.81],cuff:[.731,.81],dir:[.68,-.73],L:.47,T:.17},staff:{w:.2215,h:.56,g:[.55,.74],cuff:[.484,.847],dir:[-.334,-.943],L:.52,T:.19},tuck:.02};
 let p0=null;
-function wizHide(){for(const k in WH)if(WH[k])WH[k].visible=false}
+function wizHide(){for(const k in WH)if(WH[k])WH[k].visible=false;hmHide('')}
 function whMesh(name,w,h,ax,ay,order){const g=new THREE.PlaneGeometry(w,h);g.translate((.5-ax)*w,(ay-.5)*h,0);const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:vrTex(name),transparent:true,alphaTest:.05,side:THREE.DoubleSide,fog:false}));m.frustumCulled=false;m.renderOrder=order;scene.add(m);return m}
 function faceBasis(pos,dir){p0.cam.getWorldPosition(_Z);_Z.sub(pos);if(_Z.lengthSq()<1e-6)_Z.set(0,0,1);_Z.normalize();_Y.copy(dir).addScaledVector(_Z,-dir.dot(_Z));if(_Y.lengthSq()<1e-6)_Y.set(0,1,0);_Y.normalize();_X.crossVectors(_Y,_Z).normalize();_m4.makeBasis(_X,_Y,_Z);return _m4}
 // The sleeve rides on the hand picture itself and is drawn over it: its cuff covers the wrist band and it runs the way that opening faces,
@@ -1248,26 +1248,32 @@ function whSleeve(parent,name,D,right){const g=new THREE.PlaneGeometry(1,1);g.tr
  const k=WHD.tuck;m.scale.set(D.L,D.T,1);m.position.set((D.cuff[0]-D.g[0])*D.w-D.dir[0]*k,(D.g[1]-D.cuff[1])*D.h-D.dir[1]*k,.002);
  m.rotation.z=right?Math.atan2(D.dir[1],D.dir[0]):Math.atan2(-D.dir[1],-D.dir[0]);parent.add(m);return m}
 // 3D Wizard arms (from the user's Tripo models), loaded only when the Wizard is played in VR. Until they arrive the picture arms show.
-const WM={state:0,r:null,l:null,disk:null};
+// 3D arms (from the user's Tripo models), loaded only when that hero is played in VR. Until they arrive the picture arms show.
+const HM={wizard:{state:0,f:['wiz_arm_r','wiz_arm_l']},valkyrie:{state:0,f:['valk_arm_r','valk_arm_l']}};
 function wmPart(buf){const dv=new DataView(buf),jl=dv.getUint32(0,true),meta=JSON.parse(new TextDecoder().decode(new Uint8Array(buf,4,jl)));let o=4+jl;const al=n=>n+((4-n%4)%4),out={};
  for(const m of meta){const q=new Uint16Array(buf,o,m.nv*3);o+=al(m.nv*6);const uq=new Uint16Array(buf,o,m.nv*2);o+=al(m.nv*4);const idx=m.i32?new Uint32Array(buf,o,m.ni):new Uint16Array(buf,o,m.ni);o+=al(m.ni*(m.i32?4:2));
   const pos=new Float32Array(m.nv*3),uv=new Float32Array(m.nv*2);for(let i=0;i<m.nv;i++){for(let k=0;k<3;k++)pos[i*3+k]=m.mn[k]+q[i*3+k]/65535*(m.mx[k]-m.mn[k]);uv[i*2]=uq[i*2]/65535;uv[i*2+1]=uq[i*2+1]/65535}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('uv',new THREE.BufferAttribute(uv,2));g.setIndex(new THREE.BufferAttribute(idx,1));g.computeVertexNormals();out[m.name]=g}
  return out}
-function wmLoad(){if(WM.state)return;WM.state=1;
+function hmLoad(hero){const M=HM[hero];if(!M||M.state)return;M.state=1;
  const tex=n=>{const t=texLoader.load('fp/'+n+'.jpg');t.encoding=THREE.sRGBEncoding;return t};
  const mat=t=>new THREE.MeshLambertMaterial({map:t,emissive:0xffffff,emissiveMap:t,emissiveIntensity:.4,side:THREE.DoubleSide});
- const mk=(g,m)=>{const x=new THREE.Mesh(g,m);x.frustumCulled=false;x.renderOrder=986;return x};
- Promise.all(['wiz_arm_r','wiz_arm_l'].map(n=>fetch(V('fp/'+n+'.txt')).then(r=>{if(!r.ok)throw 0;return r.text()}).then(t=>{const b=atob(t.trim()),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u.buffer}))).then(([br,bl])=>{
-  const R=wmPart(br),L=wmPart(bl),tr=tex('wiz_arm_r'),tl=tex('wiz_arm_l');
-  WM.r=new THREE.Group();WM.r.add(mk(R.arm,mat(tr)));WM.disk=mk(R.disk,new THREE.MeshBasicMaterial({map:tr,side:THREE.DoubleSide}));WM.r.add(WM.disk);
-  WM.l=new THREE.Group();WM.l.add(mk(L.staff,mat(tl)));WM.r.visible=WM.l.visible=false;WH.mr=WM.r;WH.ml=WM.l;WM.state=2}).catch(()=>{WM.state=3})}
-function wizModelTick(p){const firing=p.anim>.05;
- if(WM.r.parent!==XR.right)XR.right.add(WM.r);if(WM.l.parent!==XR.left)XR.left.add(WM.l);
- WM.r.position.set(0,0,firing?-.03*p.anim:0);WM.r.visible=true;WM.disk.material.color.setScalar(1+(firing?p.anim*.8:0));
- WM.l.rotation.x=p.anim2>0?-Math.sin(Math.min(1,p.anim2)*PI)*.7:0;WM.l.visible=true;
+ const grp=(parts,t)=>{const g=new THREE.Group();g.parts={};const m=mat(t);for(const k in parts){const x=new THREE.Mesh(parts[k],k==='disk'?new THREE.MeshBasicMaterial({map:t,side:THREE.DoubleSide}):k==='dagger'?mat(t):m);x.frustumCulled=false;x.renderOrder=986;g.add(x);g.parts[k]=x}g.visible=false;return g};
+ Promise.all(M.f.map(n=>fetch(V('fp/'+n+'.txt')).then(r=>{if(!r.ok)throw 0;return r.text()}).then(t=>{const b=atob(t.trim()),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u.buffer}))).then(([br,bl])=>{
+  M.r=grp(wmPart(br),tex(M.f[0]));M.l=grp(wmPart(bl),tex(M.f[1]));M.state=2}).catch(()=>{M.state=3})}
+function vrHandAim(p){return p.hero==='wizard'||p.hero==='valkyrie'&&HM.valkyrie.state===2}
+function hmHide(except){for(const k in HM){const M=HM[k];if(M.state===2&&k!==except)M.r.visible=M.l.visible=false}}
+function hmAttach(M){if(M.r.parent!==XR.right)XR.right.add(M.r);if(M.l.parent!==XR.left)XR.left.add(M.l);M.r.visible=M.l.visible=true}
+function wizModelTick(p){const M=HM.wizard,firing=p.anim>.05;hmAttach(M);
+ M.r.position.set(0,0,firing?-.03*p.anim:0);M.r.parts.disk.material.color.setScalar(1+(firing?p.anim*.8:0));
+ M.l.rotation.x=p.anim2>0?-Math.sin(Math.min(1,p.anim2)*PI)*.7:0;
  for(const k of ['hand','staff','sr','sl'])if(WH[k])WH[k].visible=false}
-function wizHandsTick(p){p0=p;wmLoad();if(WM.state===2){wizModelTick(p);return}if(!WH.hand){const H=WHD.hand,S=WHD.staff;WH.hand=whMesh('vr_hand_r',H.w,H.h,H.g[0],H.g[1],986);WH.staff=whMesh('vr_staff_l',S.w,S.h,S.g[0],S.g[1],986);
+// Valkyrie: dagger in the right hand (thrown: the arm snaps forward and the blade is gone until the next one is drawn), open bracer hand on the left
+function valkModelTick(p){const M=HM.valkyrie,a=p.anim;hmAttach(M);
+ const snap=a>.6?Math.sin((1-a)/.4*PI):0;M.r.position.set(0,snap*.03,-snap*.12);M.r.rotation.x=-snap*.5;
+ const d=M.r.parts.dagger;d.visible=!(a>.12&&a<.75);d.material.emissive.setHex(p.tier>=5?0x9fd8ff:p.tier>=3?0xffc070:0xffffff);d.material.emissiveIntensity=p.tier>=3?.8:.4;
+ M.l.position.set(0,Math.sin(p.bob||0)*.006,0)}
+function wizHandsTick(p){p0=p;hmLoad('wizard');if(HM.wizard.state===2){wizModelTick(p);return}if(!WH.hand){const H=WHD.hand,S=WHD.staff;WH.hand=whMesh('vr_hand_r',H.w,H.h,H.g[0],H.g[1],986);WH.staff=whMesh('vr_staff_l',S.w,S.h,S.g[0],S.g[1],986);
   WH.sr=whSleeve(WH.hand,'vr_sleeve_r',H,true);WH.sl=whSleeve(WH.staff,'vr_sleeve_l',S,false)}
  const firing=p.anim>.05;
  // right: magic hand (pivots at the wrist, points where the controller points, kicks a little when casting)
@@ -1277,7 +1283,9 @@ function wizHandsTick(p){p0=p;wmLoad();if(WM.state===2){wizModelTick(p);return}i
  XR.left.getWorldPosition(_wp);XR.left.getWorldQuaternion(_wq);_f.set(0,0,-1).applyQuaternion(_wq);_f.y+=.35;_f.normalize();
  WH.staff.quaternion.setFromRotationMatrix(faceBasis(_wp,_f));if(p.anim2>0)WH.staff.rotateZ(Math.sin(p.anim2*PI)*.7);WH.staff.position.copy(_wp);WH.staff.visible=true;WH.sl.visible=true}
 function vrArtTick(p){if(!VRART.on||!p.alive||(G&&G.paused)){vrArtHide();wizHide();return}
- if(p.hero==='wizard'&&XR.left&&XR.right){vrArtHide();wizHandsTick(p);return}wizHide();
+ if(p.hero==='wizard'&&XR.left&&XR.right){vrArtHide();hmHide('wizard');wizHandsTick(p);return}
+ if(p.hero==='valkyrie'&&XR.left&&XR.right){hmLoad('valkyrie');if(HM.valkyrie.state===2){vrArtHide();for(const k in WH)if(WH[k])WH[k].visible=false;hmHide('valkyrie');valkModelTick(p);return}}
+ wizHide();
  let P=VRART.planes[p.hero];const wiz=p.hero==='wizard',L=FPL[p.hero];
  if(!P||P.cam!==p.cam){if(P){P.a.parent&&P.a.parent.remove(P.a);P.b&&P.b.parent&&P.b.parent.remove(P.b)}
   if(wiz){const w=VRW*1.22,h=w*9/16;P={a:vrPlane(w,h),b:vrPlane(w,h),w,h}}else{const h=VRH*.78*L.h;P={a:vrPlane(h*672/900,h),b:null,h}}
