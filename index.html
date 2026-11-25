@@ -490,7 +490,7 @@ const POOLS={
 const D=new THREE.Object3D();D.rotation.order='YXZ';const TC=new THREE.Color();
 
 // ---------- sound
-const BUILD='20261125005859',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
+const BUILD='20261125100331',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
 let AC=null,musicOn=true,musicT=0,step=0,nb=null;const lastS={};
 function initAudio(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const b=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;nb=b}if(AC.state==='suspended')AC.resume()}catch(e){AC=null}}
 function tone(f,d,type,v,f2,at){if(!AC)return;const t=at||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
@@ -1441,7 +1441,27 @@ function whSleeve(parent,name,D,right){const g=new THREE.PlaneGeometry(1,1);g.tr
  const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:vrTex(name),transparent:true,alphaTest:.05,side:THREE.DoubleSide,fog:false}));m.frustumCulled=false;m.renderOrder=988;
  const k=WHD.tuck;m.scale.set(D.L,D.T,1);m.position.set((D.cuff[0]-D.g[0])*D.w-D.dir[0]*k,(D.g[1]-D.cuff[1])*D.h-D.dir[1]*k,.002);
  m.rotation.z=right?Math.atan2(D.dir[1],D.dir[0]):Math.atan2(-D.dir[1],-D.dir[0]);parent.add(m);return m}
-function wizHandsTick(p){p0=p;if(!WH.hand){const H=WHD.hand,S=WHD.staff;WH.hand=whMesh('vr_hand_r',H.w,H.h,H.g[0],H.g[1],986);WH.staff=whMesh('vr_staff_l',S.w,S.h,S.g[0],S.g[1],986);
+// 3D Wizard arms (from the user's Tripo models), loaded only when the Wizard is played in VR. Until they arrive the picture arms show.
+const WM={state:0,r:null,l:null,disk:null};
+function wmPart(buf){const dv=new DataView(buf),jl=dv.getUint32(0,true),meta=JSON.parse(new TextDecoder().decode(new Uint8Array(buf,4,jl)));let o=4+jl;const al=n=>n+((4-n%4)%4),out={};
+ for(const m of meta){const q=new Uint16Array(buf,o,m.nv*3);o+=al(m.nv*6);const uq=new Uint16Array(buf,o,m.nv*2);o+=al(m.nv*4);const idx=m.i32?new Uint32Array(buf,o,m.ni):new Uint16Array(buf,o,m.ni);o+=al(m.ni*(m.i32?4:2));
+  const pos=new Float32Array(m.nv*3),uv=new Float32Array(m.nv*2);for(let i=0;i<m.nv;i++){for(let k=0;k<3;k++)pos[i*3+k]=m.mn[k]+q[i*3+k]/65535*(m.mx[k]-m.mn[k]);uv[i*2]=uq[i*2]/65535;uv[i*2+1]=uq[i*2+1]/65535}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('uv',new THREE.BufferAttribute(uv,2));g.setIndex(new THREE.BufferAttribute(idx,1));g.computeVertexNormals();out[m.name]=g}
+ return out}
+function wmLoad(){if(WM.state)return;WM.state=1;
+ const tex=n=>{const t=texLoader.load('fp/'+n+'.jpg');t.encoding=THREE.sRGBEncoding;return t};
+ const mat=t=>new THREE.MeshLambertMaterial({map:t,emissive:0xffffff,emissiveMap:t,emissiveIntensity:.4,side:THREE.DoubleSide});
+ const mk=(g,m)=>{const x=new THREE.Mesh(g,m);x.frustumCulled=false;x.renderOrder=986;return x};
+ Promise.all(['wiz_arm_r','wiz_arm_l'].map(n=>fetch(V('fp/'+n+'.bin')).then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()}))).then(([br,bl])=>{
+  const R=wmPart(br),L=wmPart(bl),tr=tex('wiz_arm_r'),tl=tex('wiz_arm_l');
+  WM.r=new THREE.Group();WM.r.add(mk(R.arm,mat(tr)));WM.disk=mk(R.disk,new THREE.MeshBasicMaterial({map:tr,side:THREE.DoubleSide}));WM.r.add(WM.disk);
+  WM.l=new THREE.Group();WM.l.add(mk(L.staff,mat(tl)));WM.r.visible=WM.l.visible=false;WH.mr=WM.r;WH.ml=WM.l;WM.state=2}).catch(()=>{WM.state=3})}
+function wizModelTick(p){const firing=p.anim>.05;
+ if(WM.r.parent!==XR.right)XR.right.add(WM.r);if(WM.l.parent!==XR.left)XR.left.add(WM.l);
+ WM.r.position.set(0,0,firing?-.03*p.anim:0);WM.r.visible=true;WM.disk.material.color.setScalar(1+(firing?p.anim*.8:0));
+ WM.l.rotation.x=p.anim2>0?-Math.sin(Math.min(1,p.anim2)*PI)*.7:0;WM.l.visible=true;
+ for(const k of ['hand','staff','sr','sl'])if(WH[k])WH[k].visible=false}
+function wizHandsTick(p){p0=p;wmLoad();if(WM.state===2){wizModelTick(p);return}if(!WH.hand){const H=WHD.hand,S=WHD.staff;WH.hand=whMesh('vr_hand_r',H.w,H.h,H.g[0],H.g[1],986);WH.staff=whMesh('vr_staff_l',S.w,S.h,S.g[0],S.g[1],986);
   WH.sr=whSleeve(WH.hand,'vr_sleeve_r',H,true);WH.sl=whSleeve(WH.staff,'vr_sleeve_l',S,false)}
  const firing=p.anim>.05;
  // right: magic hand (pivots at the wrist, points where the controller points, kicks a little when casting)
