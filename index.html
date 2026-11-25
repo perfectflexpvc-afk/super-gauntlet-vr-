@@ -187,6 +187,7 @@ body.safe .flash{background:#ffe9c8}
 <div id="touch" hidden><div id="tLook"></div><div id="tStick"><i></i></div><div id="tBtns"><button data-b="a1" class="tb">Power</button><button data-b="a2" class="tb">Staff</button><button data-b="pot" class="tb">Potion</button><button data-b="eat" class="tb">Eat</button><button data-b="dash" class="tb">Dash</button><button data-b="fire" class="tb fire">Fire</button></div><button id="tPause" class="tb">Pause</button></div>
 <div id="pause" class="overlay" hidden><div class="card"><h2>Paused</h2><div id="roomInfo" hidden></div><button class="go" id="resumeBtn">Resume</button><button class="go" id="vrBack" hidden>Back to VR</button><button class="alt" id="music2">Music: on</button><button class="alt" id="quitBtn">Quit to hero select</button></div></div>
 <div id="vrReady" class="overlay" hidden><div class="card"><h2>You’re in the dungeon</h2><p>Connected to the host. Put the headset on and press the button to go into VR.</p><button class="go" id="vrReadyBtn">Enter VR</button><button class="alt" id="vrReadyNo">Stay on the screen</button></div></div>
+<div id="quitAsk" class="overlay" hidden><div class="card"><h2>Quit the game?</h2><p id="quitMsg"></p><button class="go" id="quitNo">Keep playing</button><button class="alt" id="quitYes">Yes, quit</button></div></div>
 <div id="over" class="overlay" hidden><div class="card"><h2>Game over</h2><p id="overSub"></p><table id="finalScores"></table><button class="go" id="againBtn">Back to hero select</button></div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -213,7 +214,7 @@ const HEROES={
   a1:'Blade Fan',a1cd:7,blurb:'A warrior in red and gold. Endless ruby-hilted throwing daggers that fly faster and farther as she grows. More health than the Wizard, less than the Barbarian.'}
 };
 const HK=Object.keys(HEROES);
-const TIERP=[0,40,130,300,600];
+const TIERP=[0,420,1050,1800,2700];
 const EDEF={
  ghost:{hp:2,speed:3.4,touch:18,pts:10,burst:0xbfd0ff,r:.45,kami:true,eye:[.5,.95,1],ey:1.6,ez:.32,ex:.09,gen:0x7fd8ff},
  grunt:{hp:5,speed:3.1,touch:12,pts:20,burst:0x8fa040,r:.5,eye:[1,.2,.1],ey:1.82,ez:.3,ex:.12,gen:0x9fe060},
@@ -784,12 +785,13 @@ function fpTick(){for(const p of humans()){const e=p.el;if(!e||!e.fp)continue;co
  const kick=firing?18:p.anim*10,swing=p.hero==='wizard'?-Math.sin(p.anim2*PI)*12:p.hero==='barbarian'?-Math.sin(p.anim2*PI)*8:0,glow=p.hero==='wizard'&&firing&&!SAFE.on?' brightness(1.35)':'';
  const L=FPL[p.hero],ph=e.root.clientHeight||innerHeight,pw=e.root.clientWidth||innerWidth,wz=e.wzb;if(!wz)e.fp.style.height=(L.h*100)+'%';
  e.fp.style.filter=(S.filter+glow).trim()||'none';(wz||e.fp).style.transform=`translate(${((L.dx||0)*pw-p.sway*60).toFixed(1)}px,${(L.dy*ph+Math.sin(p.bob)*7+kick*(wz?.4:1)).toFixed(1)}px) rotate(${(wz?0:swing).toFixed(1)}deg)`;
- if(wz&&e.fp2){// the staff hand: dips out of view now and then, and drops right out of view as his strike
-  const now=performance.now()/1000;if(e.dipAt===undefined)e.dipAt=now+5+Math.random()*6;
-  let dip=0;const dt=now-e.dipAt;if(dt>0){dip=dt<.35?dt/.35:dt<1.15?1:dt<1.6?1-(dt-1.15)/.45:0;if(dt>=1.6)e.dipAt=now+6+Math.random()*7}
-  const sw=p.anim2>0?Math.pow(Math.sin(Math.min(1,p.anim2)*PI),.6):0,d=Math.max(sw,dip*dip*(3-2*dip));
+ if(wz&&e.fp2){const now=performance.now();
+  e.hl=(e.hl||0)+((p.anim>.05?1:0)-(e.hl||0))*(p.anim>.05?.45:.12);const hd=1-e.hl;
+  e.fp.style.transformOrigin='6% 100%';e.fp.style.transform=`translate(-3%,${(hd*46).toFixed(1)}%) rotate(${(-hd*16).toFixed(1)}deg)`;
+  const heal=now-(p.healAt||-1e9),sw=now-(p.staffAt||-1e9),upH=heal<1000?Math.min(1,heal/160,(1000-heal)/260):0,upS=sw<520?Math.min(1,sw/90,(520-sw)/200):0,up=clamp(Math.max(upH,upS),0,1),d=1-up*up*(3-2*up);
   const s2='fp/'+(firing?S.staffFire:S.staff)+'.webp';if(e.fp2Src!==s2){e.fp2Src=s2;e.fp2.src=s2}
-  e.fp2.style.filter=glow?glow.trim():'none';e.fp2.style.transform=`translate(${(d*-6).toFixed(1)}%,${(d*78).toFixed(1)}%) rotate(${(d*14).toFixed(1)}deg)`}}}
+  e.fp2.style.display=d>.98?'none':'';e.fp2.style.filter=glow?glow.trim():'none';e.fp2.style.transform=`translate(8%,${(d*88).toFixed(1)}%) rotate(${(d*16+(upS>0&&upH===0?-sw/520*10:0)).toFixed(1)}deg)`}}}
+
 const SPR={barbarian:{f:'barbarian',h:2.35},elf:{f:'elf',h:2.25},wizard:{f:'wizard',h:2.45},valkyrie:{f:'valkyrie',h:2.3,atk:'valkyrie_throw'}};
 const SPRTEX={},texLoader=new THREE.TextureLoader();
 function sprTex(name,cb){let e=SPRTEX[name];if(!e){e=SPRTEX[name]={tex:null,cbs:[]};try{texLoader.load('sprites/'+name+'.webp',t=>{t.encoding=THREE.sRGBEncoding;e.tex=t;for(const f of e.cbs)f(t);e.cbs=[]},undefined,()=>{e.cbs=[]})}catch(x){}}if(e.tex)cb(e.tex);else e.cbs.push(cb)}
@@ -945,10 +947,11 @@ function hurtPlayer(p,amt){if(!p.alive||G.transT>0||G.over)return;if(p.buff==='w
 const fwd=p=>({x:-Math.sin(p.yaw),z:-Math.cos(p.yaw)});
 const XR={c:[],left:null,right:null,hud:null};
 function assistDir(p,dx,dz){let best=null,bd=.32;for(const e of G.enemies){if(e.dead||e.hidden)continue;const ex=e.x-p.x,ez=e.z-p.z,d=Math.hypot(ex,ez);if(d>20||d<.5)continue;const a=Math.acos(clamp((ex*dx+ez*dz)/d,-1,1));if(a<bd&&los(p.x,p.z,e.x,e.z)){bd=a;best=[ex/d,ez/d]}}return best}
-function aim(p){if(p.net){const y=p.aimYaw!==undefined?p.aimYaw:p.yaw;let dx=-Math.sin(y),dz=-Math.cos(y);if(p.assist){const a=assistDir(p,dx,dz);if(a){dx=a[0];dz=a[1]}}return{dx,dz,ox:p.x+dx*.5,oy:p.H.eye-.4,oz:p.z+dz*.5}}
+function aim(p){if(p.net){const y=p.aimYaw!==undefined?p.aimYaw:p.yaw;let dx=-Math.sin(y),dz=-Math.cos(y);if(p.assist){const a=assistDir(p,dx,dz);if(a){dx=a[0];dz=a[1]}}const w=p.hero==='wizard'?.38:0;return{dx,dz,ox:p.x+dx*.5+dz*w,oy:p.H.eye-(w?.55:.4),oz:p.z+dz*.5-dx*w}}
+ if(p.i===0&&p.local&&renderer.xr.isPresenting&&p.hero==='wizard'&&VRART.on&&XR.left){XR.left.getWorldQuaternion(_q);_v.set(0,0,-1).applyQuaternion(_q);_v.y=0;if(_v.lengthSq()>1e-4){_v.normalize();XR.left.getWorldPosition(_v2);return{dx:_v.x,dz:_v.z,ox:p.x+_v.x*.5,oy:clamp(_v2.y,.6,2),oz:p.z+_v.z*.5}}}
  if(p.local&&(p.ctrl==='touch'||(p.ctrl&&p.ctrl.startsWith('gp')))){const f=fwd(p),a=assistDir(p,f.x,f.z);if(a)return{dx:a[0],dz:a[1],ox:p.x+a[0]*.5,oy:p.H.eye-.4,oz:p.z+a[1]*.5}}
  if(p.i===0&&p.local&&renderer.xr.isPresenting&&XR.right&&!VRART.on){XR.right.getWorldQuaternion(_q);_v.set(0,0,-1).applyQuaternion(_q);_v.y=0;if(_v.lengthSq()>1e-4){_v.normalize();XR.right.getWorldPosition(_v2);return{dx:_v.x,dz:_v.z,ox:p.x+_v.x*.5,oy:clamp(_v2.y,.6,2),oz:p.z+_v.z*.5}}}
- const f=fwd(p);return{dx:f.x,dz:f.z,ox:p.x+f.x*.5,oy:p.H.eye-.4,oz:p.z+f.z*.5}}
+ const f=fwd(p);if(p.hero==='wizard')return{dx:f.x,dz:f.z,ox:p.x+f.x*.5+f.z*.38,oy:p.H.eye-.55,oz:p.z+f.z*.5-f.x*.38};return{dx:f.x,dz:f.z,ox:p.x+f.x*.5,oy:p.H.eye-.4,oz:p.z+f.z*.5}}
 function shoot(p,kind,ang,o){const a=aim(p),c=Math.cos(ang),s=Math.sin(ang),dx=a.dx*c-a.dz*s,dz2=a.dx*s+a.dz*c;G.proj.push(Object.assign({kind,x:a.ox,y:a.oy,z:a.oz,vx:dx*o.speed,vz:dz2*o.speed,owner:p,hit:null,spin:Math.random()*6,tint:p.H.tint[p.tier-1],glow:p.H.glow[p.tier-1],tier:p.tier},o))}
 function fire(p){const t=p.tier,haste=p.buff==='haste'&&p.buffT>0?.62:1;
  if(p.hero==='barbarian'){const o={speed:17+t*2,dmg:7+t*3,pierce:t,life:1.6+t*.15,r:.75+t*.08,knock:9,stun:.7,scale:1+t*.1};shoot(p,'axe',0,o);if(t>=5){shoot(p,'axe',.12,Object.assign({},o));shoot(p,'axe',-.12,Object.assign({},o))}p.cool=p.H.rate*haste;sfx('axe')}
@@ -969,11 +972,14 @@ function doDash(p){if(!p.alive||(p.cdD||0)>0||p.dash>0)return;const m=Math.hypot
 function ability1(p){if(p.cd1>0)return;const H=p.H;
  if(p.hero==='barbarian'){const R=6.5+p.tier*.7;for(const e of G.enemies)if(!e.dead&&Math.hypot(e.x-p.x,e.z-p.z)<R)killEnemy(e,p);for(const g of G.gens.slice())if(Math.hypot(g.x-p.x,g.z-p.z)<R)hurtGen(g,10,p);for(const c of G.chests.slice())if(Math.hypot(c.x-p.x,c.z-p.z)<R)openChest(c,p);breakAround(p.x,p.z,R*.6,99,p);ring(p.x,p.z,R,0xffb060);burst(p.x,.3,p.z,0xa08060,40,9);p.shake=.5;p.anim2=1;sfx('slam');rumble(p,350,1)}
  else if(p.hero==='elf'){const m=Math.hypot(p.mvx,p.mvz);const f=fwd(p);p.dx=m>.1?p.mvx/m:f.x;p.dz=m>.1?p.mvz/m:f.z;p.dash=.22;p.dashSp=28;sfx('dash')}
- else if(p.hero==='wizard'){if(p.mana<25){pmsg(p,'Need 25 magic to heal');return}p.mana-=25;for(const q of players){if(!q.alive||Math.hypot(q.x-p.x,q.z-p.z)>9)continue;q.hp=Math.min(q.max,q.hp+Math.max(60,Math.round(180*growth())));burst(q.x,1.2,q.z,0x60ff90,24,3);if(q!==p)pmsg(q,'Healed by the Wizard')}pmsg(p,'Heal!');sfx('heal')}
+ else if(p.hero==='wizard'){if(p.mana<25){pmsg(p,'Need 25 magic to heal');return}p.mana-=25;for(const q of players){if(!q.alive||Math.hypot(q.x-p.x,q.z-p.z)>9)continue;q.hp=Math.min(q.max,q.hp+Math.max(60,Math.round(180*growth())));burst(q.x,1.2,q.z,0x60ff90,24,3);if(q!==p)pmsg(q,'Healed by the Wizard')}pmsg(p,'Heal!');sfx('heal');p.healAt=performance.now()}
  else{for(let k=0;k<16;k++)shoot(p,'knife',k/16*TAU,{speed:24+p.tier*4,dmg:2.5+p.tier*.6,pierce:1,life:.9,r:.55,knock:4,scale:1});p.anim=1;sfx('knife')}
  p.cd1=H.a1cd}
-function ability2(p){if(p.hero!=='wizard'||p.cd2>0)return;p.cd2=.5;p.anim2=1;sfx('swing');const f=fwd(p),dmg=2.5+p.tier*.6;
- for(const e of G.enemies){if(e.dead)continue;const dx=e.x-p.x,dz2=e.z-p.z,d=Math.hypot(dx,dz2);if(d<3.4&&d>0&&(dx*f.x+dz2*f.z)/d>.34)hurtEnemy(e,dmg,p,dx/d*7,dz2/d*7,.4)}
+function ability2(p){if(p.hero!=='wizard'||p.cd2>0)return;p.cd2=.5;p.anim2=1;p.staffAt=performance.now();sfx('swing');const f=fwd(p),dmg=2.5+p.tier*.6;
+ {const t=p.tier,R=4.3+t*.55,maxHit=1+t,wave=2+t*1.3,kb=7+t*2.5,hits=[];
+  for(const e of G.enemies){if(e.dead||e.hidden)continue;const dx=e.x-p.x,dz2=e.z-p.z,d=Math.hypot(dx,dz2);if(d>0&&d<R&&(dx*f.x+dz2*f.z)/d>(t>=4?.05:.3))hits.push([d,e,dx,dz2])}
+  hits.sort((a,b)=>a[0]-b[0]);for(const [d,e,dx,dz2] of hits.slice(0,maxHit))hurtEnemy(e,d<3.4?dmg+wave:wave,p,dx/d*kb,dz2/d*kb,.5+t*.1);
+  const cx=p.x+f.x*2.4,cz=p.z+f.z*2.4;ring(cx,cz,1.2+t*.35,t>=3?0xb39cff:0x9fd8ff);burst(cx,.3,cz,t>=3?0xb39cff:0xbfe8ff,14+t*6,3+t);p.shake=Math.max(p.shake,.15+t*.04);rumble(p,90,.3+t*.1)}
  for(const g of G.gens.slice())if(Math.hypot(g.x-p.x,g.z-p.z)<3.6)hurtGen(g,dmg,p);for(const c of G.chests.slice())if(Math.hypot(c.x-p.x,c.z-p.z)<3)openChest(c,p);breakAround(p.x+f.x*2,p.z+f.z*2,1,dmg,p)}
 function blast(p,x,z,R){for(const e of G.enemies)if(!e.dead&&Math.hypot(e.x-x,e.z-z)<R)killEnemy(e,p);for(const g of G.gens.slice())if(Math.hypot(g.x-x,g.z-z)<R)hurtGen(g,10,p);ring(x,z,R,0x80a0ff);burst(x,1,z,0x80a0ff,40,8)}
 function usePotion(p){if(p.potions<=0){pmsg(p,'No potions');return}p.potions--;blast(p,p.x,p.z,20);G.flash=1;sfx('potion');rumble(p,400,.8)}
@@ -1173,7 +1179,7 @@ function roomCode(){return NET.code&&NET.nr?NET.code.slice(1).toUpperCase():''}
 for(let i=0;i<2;i++){const c=renderer.xr.getController(i);c.addEventListener('connected',e=>{c.userData.hand=e.data.handedness;if(e.data.handedness==='right')XR.right=c;if(e.data.handedness==='left'){XR.left=c;if(XR.hud&&XR.hud.parent!==c)c.add(XR.hud)}});c.addEventListener('disconnected',()=>{if(XR.right===c)XR.right=null;if(XR.left===c)XR.left=null});XR.c.push(c)}
 function onVRStart(){const p=players[0];if(!p)return;showTouch();for(const c of XR.c)p.dolly.add(c);for(const q of players)setLayer(q.body.root,0);p.body.root.visible=false;applyQuality();
  XR.hudC=document.createElement('canvas');XR.hudC.width=512;XR.hudC.height=256;XR.hud=new THREE.Mesh(new THREE.PlaneGeometry(.22,.11),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(XR.hudC),transparent:true}));XR.hud.position.set(0,.07,.02);XR.hud.rotation.x=-.9;if(XR.left)XR.left.add(XR.hud);$('#hud').hidden=true}
-function onVREnd(){vrMenuClose();vrArtHide();const p=players[0];$('#hud').hidden=false;if(XR.hud&&XR.hud.parent)XR.hud.parent.remove(XR.hud);XR.hud=null;if(!p)return;p.cam.add(p.vm.root);p.vm.root.position.set(0,0,0);setLayer(p.vm.root,20);players.forEach(q=>setLayer(q.body.root,10+q.i));p.body.root.visible=p.alive;applyQuality();showTouch();if(running())setPause(true)}
+function onVREnd(){vrMenuClose();vrArtHide();wizHide();const p=players[0];$('#hud').hidden=false;if(XR.hud&&XR.hud.parent)XR.hud.parent.remove(XR.hud);XR.hud=null;if(!p)return;p.cam.add(p.vm.root);p.vm.root.position.set(0,0,0);setLayer(p.vm.root,20);players.forEach(q=>setLayer(q.body.root,10+q.i));p.body.root.visible=p.alive;applyQuality();showTouch();if(running())setPause(true)}
 async function enterVR(){if(!navigator.xr){menuMsg('This browser has no VR support. Open the page in your headset’s browser.');return}
  try{const s=await navigator.xr.requestSession('immersive-vr',{optionalFeatures:['local-floor','bounded-floor']});if(!G||G.demo)startGame(true);renderer.xr.setReferenceSpaceType('local-floor');await renderer.xr.setSession(s);onVRStart();watchXR(s)}
  catch(err){menuMsg('VR could not start here. Open this page directly in your headset’s browser, then press Enter VR.')}}
@@ -1277,8 +1283,8 @@ function applySnap(s){if(!s||typeof s!=='object')return;
 function showOver(t,sub){$('#vrReady').hidden=true;if(renderer.xr.isPresenting){try{renderer.xr.getSession().end()}catch(e){}}$('#over h2').textContent=t;$('#overSub').textContent=sub;$('#finalScores').innerHTML=players.map(p=>`<tr><td style="color:${p.H.css}">${p.H.name}${p.ai?' (ally)':''} · ${esc(p.H.tiers[p.tier-1])}</td><td>${p.score.toLocaleString()} gold · ${p.kills} foes</td></tr>`).join('');$('#over').hidden=false;$('#againBtn').focus()}
 function clientLocal(p,inp,dt){if(inp.fire&&!p.netFire)NET.cnt.fc=(NET.cnt.fc|0)+1;p.netFire=inp.fire;
  if(inp.fire&&p.cool<=0&&!(p.hero==='wizard'&&p.mana<2)){p.anim=1;p.cool=p.H.rate*(p.buff==='haste'&&p.buffT>0?.62:1);if(p.hero==='elf')p.draw=0;sfx({barbarian:'axe',elf:'arrow',wizard:'magic',valkyrie:'knife'}[p.hero])}
- if(inp.a1){NET.cnt.a1++;if(p.cd1<=0){if(p.hero==='elf'){const m=Math.hypot(p.mvx,p.mvz),f=fwd(p);p.dx=m>.1?p.mvx/m:f.x;p.dz=m>.1?p.mvz/m:f.z;p.dash=.22;p.dashSp=28;sfx('dash')}if(p.hero==='barbarian'){p.shake=.5;rumble(p,350,1)}if(p.hero==='valkyrie')p.anim=1}}
- if(inp.a2){NET.cnt.a2++;if(p.hero==='wizard'){p.anim2=1;sfx('swing')}}
+ if(inp.a1){NET.cnt.a1++;if(p.cd1<=0){if(p.hero==='elf'){const m=Math.hypot(p.mvx,p.mvz),f=fwd(p);p.dx=m>.1?p.mvx/m:f.x;p.dz=m>.1?p.mvz/m:f.z;p.dash=.22;p.dashSp=28;sfx('dash')}if(p.hero==='barbarian'){p.shake=.5;rumble(p,350,1)}if(p.hero==='valkyrie')p.anim=1;if(p.hero==='wizard'&&p.mana>=25)p.healAt=performance.now()}}
+ if(inp.a2){NET.cnt.a2++;if(p.hero==='wizard'){p.anim2=1;p.staffAt=performance.now();sfx('swing')}}
  if(inp.pot)NET.cnt.pt++;if(inp.eat)NET.cnt.ea++;
  if(p.hp<p.max*.1&&G.time>p.nextDie){p.nextDie=G.time+20;p.nextWarn=G.time+10;say(p.H.name+' is about to die!',true)}else if(p.hp<p.max*.25&&G.time>p.nextWarn){p.nextWarn=G.time+25;say(p.H.name+' needs food, badly!',true)}}
 function clientUpdate(dt){const nr=NET.nr;let hp=null;
@@ -1288,7 +1294,7 @@ function clientUpdate(dt){const nr=NET.nr;let hp=null;
  if(nr&&performance.now()-NET.hostSeen>(NET.lastTick<0?35000:15000)&&!G.over){G.over=true;if(document.pointerLockElement)document.exitPointerLock();showTouch();showOver('Connection lost','The host’s game ended or this device lost the connection.')}
 
  if(nr&&(NET.sendT-=dt)<=0){NET.sendT=.05;const p=players[0];let ay=p.yaw,y=p.yaw;
-  if(renderer.xr.isPresenting){p.cam.getWorldDirection(_v);y=ay=Math.atan2(-_v.x,-_v.z);if(XR.right&&!VRART.on){XR.right.getWorldQuaternion(_q);_v.set(0,0,-1).applyQuaternion(_q);if(Math.hypot(_v.x,_v.z)>.01)ay=Math.atan2(-_v.x,-_v.z)}}
+  if(renderer.xr.isPresenting){p.cam.getWorldDirection(_v);y=ay=Math.atan2(-_v.x,-_v.z);if(p.hero==='wizard'&&VRART.on&&XR.left){XR.left.getWorldQuaternion(_q);_v.set(0,0,-1).applyQuaternion(_q);if(Math.hypot(_v.x,_v.z)>.01)ay=Math.atan2(-_v.x,-_v.z)}else if(XR.right&&!VRART.on){XR.right.getWorldQuaternion(_q);_v.set(0,0,-1).applyQuaternion(_q);if(Math.hypot(_v.x,_v.z)>.01)ay=Math.atan2(-_v.x,-_v.z)}}
   try{const r=nr.presence({me:{id:NET.myId,h:p.hero,dv:DEV,s:G.seed,x:+p.x.toFixed(2),z:+p.z.toFixed(2),y:+y.toFixed(3),ay:+ay.toFixed(3),mv:p.moving>.5?1:0,f:p.alive&&p.netFire?1:0,fc:NET.cnt.fc|0,a1:NET.cnt.a1,a2:NET.cnt.a2,pt:NET.cnt.pt,ea:NET.cnt.ea,as:(p.ctrl==='touch'||p.ctrl.startsWith('gp'))?1:0}});if(r&&r.catch)r.catch(()=>{})}catch(e){}}
  if(!G.lg)return;
  for(const p of players){if(p.puppet){const k=Math.min(1,dt*12);p.x+=(p.tx-p.x)*k;p.z+=(p.tz-p.z)*k;syncPlayer(p,false,dt)}else updatePlayer(p,dt)}
@@ -1366,7 +1372,8 @@ function startGame(vr){let act=slots.filter(s=>s.ctrl!=='off').map(s=>({hero:s.h
  act=act.filter(a=>a.ctrl!=='ai').concat(act.filter(a=>a.ctrl==='ai'));
  menuMsg('');initAudio();unlockMusic();teardown();G=newState();players=act.map((s,i)=>makePlayer(s.hero,s.ctrl,i));applyQuality();buildLevel();buildHud();$('#menu').hidden=true;$('#timer').hidden=true;
  if(!vr&&players[0].ctrl==='km')lockPointer();startHosting();showTouch();const hn=humans().map(p=>p.H.name),an=players.filter(p=>p.ai).map(p=>p.H.name);say('Welcome, '+hn.join(' and ')+(an.length?'. Your allies: '+an.join(' and '):'')+'. Level 1.',true)}
-function toMenu(){$('#vrReady').hidden=true;NET.wantVR=false;const ri=$('#roomInfo');if(ri){ri.hidden=true;ri.innerHTML=''}if(NET.nr){try{const r=NET.nr.leave();if(r&&r.catch)r.catch(()=>{})}catch(e){}NET.nr=null}NET.mode=null;advertise();setTimeout(prepRoom,300);$('#over h2').textContent='Game over';if(document.pointerLockElement)document.exitPointerLock();if(renderer.xr.isPresenting){try{renderer.xr.getSession().end()}catch(e){}}teardown();G=newState();G.demo=true;buildLevel();$('#pause').hidden=true;$('#over').hidden=true;$('#menu').hidden=false;$('#banner').classList.remove('show');renderSlots();renderLobby();showTouch();$('#startBtn').focus()}
+function quitWarning(){const others=players.filter(q=>q.net).length;if(NET.mode==='host'&&others)return'You are the host. Quitting ends the game for everyone ('+others+(others>1?' other players':' other player')+').';if(NET.mode==='client')return'You will leave this game. The others keep playing.';return'Your progress in this dungeon will be lost.'}
+function toMenu(){$('#quitAsk').hidden=true;$('#vrReady').hidden=true;NET.wantVR=false;const ri=$('#roomInfo');if(ri){ri.hidden=true;ri.innerHTML=''}if(NET.nr){try{const r=NET.nr.leave();if(r&&r.catch)r.catch(()=>{})}catch(e){}NET.nr=null}NET.mode=null;advertise();setTimeout(prepRoom,300);$('#over h2').textContent='Game over';if(document.pointerLockElement)document.exitPointerLock();if(renderer.xr.isPresenting){try{renderer.xr.getSession().end()}catch(e){}}teardown();G=newState();G.demo=true;buildLevel();$('#pause').hidden=true;$('#over').hidden=true;$('#menu').hidden=false;$('#banner').classList.remove('show');renderSlots();renderLobby();showTouch();$('#startBtn').focus()}
 // headset off, system menu open, app switched or tab hidden: pause; put the headset back on: resume after a short countdown
 let autoPaused=false,autoT=0;
 function autoPause(){if(running()&&!G.paused){setPause(true);autoPaused=true;clearTimeout(autoT)}}
@@ -1380,13 +1387,13 @@ $('#vrBtn').addEventListener('click',enterVR);$('#vrReadyBtn').addEventListener(
 $('#musicBtn').addEventListener('click',()=>{musicOn=!musicOn;musicLbl()});$('#music2').addEventListener('click',()=>{musicOn=!musicOn;musicLbl()});
 $('#quality').value=quality;$('#quality').addEventListener('change',e=>{quality=e.target.value;try{localStorage.setItem('sgvr-q',quality)}catch(x){}applyQuality()});
 $('#resumeBtn').addEventListener('click',()=>{setPause(false);initAudio();bgmT=-9999;music();if(players[0]&&players[0].ctrl==='km'&&!renderer.xr.isPresenting)lockPointer()});
-$('#quitBtn').addEventListener('click',toMenu);$('#againBtn').addEventListener('click',toMenu);
+$('#quitBtn').addEventListener('click',()=>{$('#quitMsg').textContent=quitWarning();$('#quitAsk').hidden=false;$('#quitNo').focus()});$('#quitYes').addEventListener('click',()=>{$('#quitAsk').hidden=true;toMenu()});$('#quitNo').addEventListener('click',()=>{$('#quitAsk').hidden=true;$('#resumeBtn').focus()});$('#againBtn').addEventListener('click',toMenu);
 renderSlots();applyQuality();G=newState();G.demo=true;buildLevel();
 
 // ---------- pause menu inside the headset: click the left thumbstick to open it; thumbstick up/down to choose, trigger or A/X to press
 const XRSUP={ok:false};try{if(navigator.xr&&navigator.xr.isSessionSupported)navigator.xr.isSessionSupported('immersive-vr').then(v=>{XRSUP.ok=!!v}).catch(()=>{})}catch(e){}
 const VRM={mesh:null,c:null,sel:0,prev:{},nav:0,items:[]};
-function vrMenuItems(){return[['resume','Resume'],['turn','Turning: '+({snap30:'snap 30°',snap45:'snap 45°',smooth:'smooth'}[COMF.turn])],['vig','Comfort vignette: '+(COMF.vig?'on':'off')],['hands','Hands: '+(VRART.on?'my art':'3D models')],['music','Music: '+(musicOn?'on':'off')],['quit','Quit to hero select']]}
+function vrMenuItems(){return[['resume','Resume'],['turn','Turning: '+({snap30:'snap 30°',snap45:'snap 45°',smooth:'smooth'}[COMF.turn])],['vig','Comfort vignette: '+(COMF.vig?'on':'off')],['hands','Hands: '+(VRART.on?'my art':'3D models')],['music','Music: '+(musicOn?'on':'off')],['quit',VRM.sure?'Press again to quit':'Quit to hero select']]}
 function vrMenuDraw(){const c=VRM.c,x=c.getContext('2d');VRM.items=vrMenuItems();x.clearRect(0,0,1024,1000);
  x.fillStyle='rgba(14,9,6,.92)';x.strokeStyle='#ffc35a';x.lineWidth=6;x.beginPath();x.roundRect?x.roundRect(6,6,1012,988,28):x.rect(6,6,1012,988);x.fill();x.stroke();
  x.textAlign='center';x.fillStyle='#ffc35a';x.font='bold 64px serif';x.fillText('Paused',512,86);
@@ -1394,10 +1401,10 @@ function vrMenuDraw(){const c=VRM.c,x=c.getContext('2d');VRM.items=vrMenuItems()
   x.fillStyle='#bfae90';x.font='26px sans-serif';x.fillText('Open the game on another device, type the code under “Play together”',512,282)}
  else{x.fillStyle='#bfae90';x.font='28px sans-serif';x.fillText('Not playing online right now',512,170)}
  VRM.items.forEach(([k,t],i)=>{const y=320+i*96,on=i===VRM.sel;x.fillStyle=on?'#c8741e':'rgba(255,255,255,.08)';x.fillRect(212,y,600,84);x.strokeStyle=on?'#ffe0a0':'rgba(255,220,160,.35)';x.lineWidth=on?5:2;x.strokeRect(212,y,600,84);x.fillStyle='#fff4dc';x.font='bold 42px sans-serif';x.fillText(t,512,y+56)});
- x.fillStyle='#9d8c70';x.font='24px sans-serif';x.fillText('Thumbstick up/down to choose · trigger or A/X to press · click left stick to resume',512,966);x.textAlign='left';VRM.mesh.material.map.needsUpdate=true}
+ if(VRM.sure){x.fillStyle='#ff9a70';x.font='bold 26px sans-serif';x.fillText(quitWarning(),512,930)}x.fillStyle='#9d8c70';x.font='24px sans-serif';x.fillText('Thumbstick up/down to choose · trigger or A/X to press · click left stick to resume',512,966);x.textAlign='left';VRM.mesh.material.map.needsUpdate=true}
 function vrMenuOpen(){const p=players[0];if(!p)return;if(!VRM.mesh){VRM.c=document.createElement('canvas');VRM.c.width=1024;VRM.c.height=1000;
   VRM.mesh=new THREE.Mesh(new THREE.PlaneGeometry(1.1,1.074),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(VRM.c),transparent:true,depthTest:false,fog:false}));VRM.mesh.renderOrder=999;VRM.mesh.frustumCulled=false}
- VRM.sel=0;const pos=new THREE.Vector3(),dir=new THREE.Vector3();p.cam.getWorldPosition(pos);p.cam.getWorldDirection(dir);dir.y=0;if(dir.lengthSq()<1e-4)dir.set(0,0,-1);dir.normalize?dir.normalize():0;
+ VRM.sel=0;VRM.sure=false;const pos=new THREE.Vector3(),dir=new THREE.Vector3();p.cam.getWorldPosition(pos);p.cam.getWorldDirection(dir);dir.y=0;if(dir.lengthSq()<1e-4)dir.set(0,0,-1);dir.normalize?dir.normalize():0;
  VRM.mesh.position.set(pos.x+dir.x*1.3,pos.y-.05,pos.z+dir.z*1.3);VRM.mesh.rotation.set(0,Math.atan2(-dir.x,-dir.z),0);if(VRM.mesh.parent!==scene)scene.add(VRM.mesh);VRM.mesh.visible=true;vrMenuDraw()}
 function vrMenuClose(){if(VRM.mesh)VRM.mesh.visible=false}
 function vrMenuTick(){const s=renderer.xr.getSession();if(!s)return;const now={};let sy=0;
@@ -1406,10 +1413,10 @@ function vrMenuTick(){const s=renderer.xr.getSession();if(!s)return;const now={}
  const pr=VRM.prev,hit=k=>now[k]&&!pr[k];VRM.prev=now;
  if(hit('ls')){if(running()&&!G.paused)setPause(true);else if(G.paused){setPause(false);bgmT=-9999;music()}return}
  if(!G.paused||!VRM.mesh||!VRM.mesh.visible)return;
- const d=sy>.6?1:sy<-.6?-1:0;if(d&&d!==VRM.nav){VRM.sel=(VRM.sel+d+VRM.items.length)%VRM.items.length;vrMenuDraw();try{sfx('pick')}catch(e){}}VRM.nav=d;
+ const d=sy>.6?1:sy<-.6?-1:0;if(d&&d!==VRM.nav){VRM.sure=false;VRM.sel=(VRM.sel+d+VRM.items.length)%VRM.items.length;vrMenuDraw();try{sfx('pick')}catch(e){}}VRM.nav=d;
  if(hit('rt')||hit('a')||hit('x')||hit('lt')){const k=VRM.items[VRM.sel][0];
   if(k==='resume'){setPause(false);bgmT=-9999;music()}else if(k==='music'){musicOn=!musicOn;musicLbl();vrMenuDraw()}else if(k==='hands'){setVRArt(!VRART.on);vrMenuDraw()}else if(k==='turn'){setComf('turn',{snap30:'snap45',snap45:'smooth',smooth:'snap30'}[COMF.turn]);vrMenuDraw()}else if(k==='vig'){setComf('vig',!COMF.vig);vrMenuDraw()}
-  else if(k==='quit'){vrMenuClose();try{s.end()}catch(e){}toMenu()}}}
+  else if(k==='quit'){if(!VRM.sure){VRM.sure=true;vrMenuDraw()}else{VRM.sure=false;vrMenuClose();try{s.end()}catch(e){}toMenu()}}}}
 
 // ---------- your first-person art inside the headset: the same shots as on the screen, held in front of your view
 const VRART={on:true,planes:{},tex:{},hero:null};
@@ -1419,7 +1426,17 @@ function vrTex(n){let t=VRART.tex[n];if(!t){t=VRART.tex[n]=texLoader.load('fp/'+
 function vrPlane(w,h){const g=new THREE.PlaneGeometry(w,h);g.translate(0,h/2,0);const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({transparent:true,alphaTest:.03,depthTest:false,depthWrite:false,fog:false}));m.renderOrder=990;m.frustumCulled=false;return m}
 function vrArtHide(){for(const k in VRART.planes){const P=VRART.planes[k];P.a.visible=false;if(P.b)P.b.visible=false}}
 const VRH=1.3,VRZ=-.72,VRW=VRH*16/9;// the flat screen's frame, rebuilt at arm's length
-function vrArtTick(p){if(!VRART.on||!p.alive||(G&&G.paused)){vrArtHide();return}
+const WH={hand:null,staff:null};const _wq=new THREE.Quaternion(),_wp=new THREE.Vector3();
+function wizHide(){if(WH.hand){WH.hand.visible=false;WH.staff.visible=false}}
+function wizHandsTick(p){if(!WH.hand){const mk=(w,h,ax,ay)=>{const g=new THREE.PlaneGeometry(w,h);g.translate(-(ax-.5)*w,(ay-.5)*h,0);const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({transparent:true,alphaTest:.05,side:THREE.DoubleSide,fog:false}));m.frustumCulled=false;m.renderOrder=985;scene.add(m);return m};
+  WH.hand=mk(.2,.3,.42,.58);WH.staff=mk(.62,.6,.62,.63)}
+ const S=FPSET.wizard(p.tier),firing=p.anim>S.at,hn=firing||p.tier>=3?'wiz_hand_glow':'wiz_hand_idle',sn=firing||p.tier>=3?'wiz_staff_glow':'wiz_staff_idle';
+ for(const [m,n] of [[WH.hand,hn],[WH.staff,sn]])if(m.userData.src!==n){m.userData.src=n;m.material.map=vrTex(n);m.material.needsUpdate=true}
+ p.cam.getWorldQuaternion(_wq);
+ XR.left.getWorldPosition(_wp);WH.hand.position.copy(_wp);WH.hand.position.y+=.05;WH.hand.quaternion.copy(_wq);WH.hand.visible=true;
+ XR.right.getWorldPosition(_wp);WH.staff.position.copy(_wp);WH.staff.quaternion.copy(_wq);if(p.anim2>0)WH.staff.rotateZ(-Math.sin(p.anim2*PI)*.6);WH.staff.visible=true}
+function vrArtTick(p){if(!VRART.on||!p.alive||(G&&G.paused)){vrArtHide();wizHide();return}
+ if(p.hero==='wizard'&&XR.left&&XR.right){vrArtHide();wizHandsTick(p);return}wizHide();
  let P=VRART.planes[p.hero];const wiz=p.hero==='wizard',L=FPL[p.hero];
  if(!P||P.cam!==p.cam){if(P){P.a.parent&&P.a.parent.remove(P.a);P.b&&P.b.parent&&P.b.parent.remove(P.b)}
   if(wiz){const w=VRW*1.22,h=w*9/16;P={a:vrPlane(w,h),b:vrPlane(w,h),w,h}}else{const h=VRH*.78*L.h;P={a:vrPlane(h*672/900,h),b:null,h}}
