@@ -490,7 +490,7 @@ const POOLS={
 const D=new THREE.Object3D();D.rotation.order='YXZ';const TC=new THREE.Color();
 
 // ---------- sound
-const BUILD='20261125003917',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
+const BUILD='20261125004517',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
 let AC=null,musicOn=true,musicT=0,step=0,nb=null;const lastS={};
 function initAudio(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const b=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;nb=b}if(AC.state==='suspended')AC.resume()}catch(e){AC=null}}
 function tone(f,d,type,v,f2,at){if(!AC)return;const t=at||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
@@ -1430,7 +1430,7 @@ const VRH=1.3,VRZ=-.72,VRW=VRH*16/9;// the flat screen's frame, rebuilt at arm's
 // VR Wizard: your right hand is his glowing magic hand on its sleeve; your left holds the staff on the other sleeve.
 // Each hand turns freely at the wrist with the controller, and each sleeve reaches back from the wrist toward your shoulder.
 const WH={hand:null,staff:null,sr:null,sl:null};const _wq=new THREE.Quaternion(),_wp=new THREE.Vector3(),_m4=new THREE.Matrix4(),_X=new THREE.Vector3(),_Y=new THREE.Vector3(),_Z=new THREE.Vector3(),_hd=new THREE.Vector3(),_sh=new THREE.Vector3(),_cr=new THREE.Vector3(),_wr=new THREE.Vector3(),_f=new THREE.Vector3();
-const WHD={hand:{w:.21,h:.26,g:[.6,.86],wr:[.6,.86]},staff:{w:.33,h:.84,g:[.55,.74],wr:[.31,.83]}};
+const WHD={hand:{w:.18,h:.22,g:[.6,.86],wr:[.6,.86]},staff:{w:.24,h:.62,g:[.55,.74],wr:[.31,.83]}};
 let p0=null;
 function wizHide(){for(const k in WH)if(WH[k])WH[k].visible=false}
 function whMesh(name,w,h,ax,ay,order){const g=new THREE.PlaneGeometry(w,h);g.translate((.5-ax)*w,(ay-.5)*h,0);const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:vrTex(name),transparent:true,alphaTest:.05,side:THREE.DoubleSide,fog:false}));m.frustumCulled=false;m.renderOrder=order;scene.add(m);return m}
