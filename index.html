@@ -490,6 +490,7 @@ const POOLS={
 const D=new THREE.Object3D();D.rotation.order='YXZ';const TC=new THREE.Color();
 
 // ---------- sound
+const BUILD='20261124203022',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
 let AC=null,musicOn=true,musicT=0,step=0,nb=null;const lastS={};
 function initAudio(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const b=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;nb=b}if(AC.state==='suspended')AC.resume()}catch(e){AC=null}}
 function tone(f,d,type,v,f2,at){if(!AC)return;const t=at||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
@@ -516,13 +517,13 @@ function musicMix(){let vol=.4,pan=0;const pl=G&&G.pools&&G.pools[0];
 // the menu's looping "ahh": starts after the warning screen, gapless, fades out when the dungeon music begins
 let BOOTDONE=!document.getElementById('boot');const MENU={buf:null,src:null,g:null,loading:false};
 function menuLoopTick(){if(!AC)return;const want=musicOn&&BOOTDONE&&!$('#menu').hidden;
- if(want&&!MENU.buf&&!MENU.loading){MENU.loading=true;fetch('music/menu-loop.wav').then(r=>r.arrayBuffer()).then(b=>new Promise((ok,no)=>{const p=AC.decodeAudioData(b,ok,no);if(p&&p.then)p.then(ok,no)})).then(buf=>{MENU.buf=buf}).catch(()=>{MENU.loading=false})}
+ if(want&&!MENU.buf&&!MENU.loading){MENU.loading=true;fetch(V('music/menu-loop.wav')).then(r=>r.arrayBuffer()).then(b=>new Promise((ok,no)=>{const p=AC.decodeAudioData(b,ok,no);if(p&&p.then)p.then(ok,no)})).then(buf=>{MENU.buf=buf}).catch(()=>{MENU.loading=false})}
  if(want&&MENU.buf&&!MENU.src){if(!MENU.g){MENU.g=AC.createGain();MENU.g.gain.value=0;MENU.g.connect(AC.destination)}const s=AC.createBufferSource();s.buffer=MENU.buf;s.loop=true;s.loopStart=3.0;s.loopEnd=MENU.buf.duration;s.connect(MENU.g);s.start();MENU.src=s}
  if(MENU.g){const t=want?.55:0;MENU.g.gain.value+=(t-MENU.g.gain.value)*(want?.04:.08);if(!want&&MENU.src&&MENU.g.gain.value<.01){try{MENU.src.stop()}catch(e){}MENU.src=null}}}
 function music(){menuLoopTick();const want=musicOn&&G&&!G.demo&&!G.over&&!G.paused&&!!G.lg;if(!want){if(!BGM.paused)BGM.pause();return}
- musicMix();const src=G.pools&&G.pools.length?ANGEL_SONG:G.flood?'music/flooded-dungeon.mp3':G.level>15?'music/dig-down.mp3':SONGS[songFor()];if(src!==bgmSrc){bgmSrc=src;BGM.src=src;bgmT=-9999}
+ musicMix();const src=G.pools&&G.pools.length?ANGEL_SONG:G.flood?'music/flooded-dungeon.mp3':G.level>15?'music/dig-down.mp3':SONGS[songFor()];if(src!==bgmSrc){bgmSrc=src;BGM.src=V(src);bgmT=-9999}
  if(BGM.paused&&performance.now()-bgmT>1500){bgmT=performance.now();try{const r=BGM.play();if(r&&r.catch)r.catch(()=>{})}catch(e){}}}
-function unlockMusic(){try{BGM.src=bgmSrc=SONGS[0];const r=BGM.play();if(r&&r.then)r.then(()=>{if(!G||G.demo)BGM.pause()}).catch(()=>{})}catch(e){}}
+function unlockMusic(){try{bgmSrc=SONGS[0];BGM.src=V(SONGS[0]);const r=BGM.play();if(r&&r.then)r.then(()=>{if(!G||G.demo)BGM.pause()}).catch(()=>{})}catch(e){}}
 let sayT=0;function say(t,force){const n=performance.now();if(!force&&n-sayT<2500)return;sayT=n;try{const u=new SpeechSynthesisUtterance(t);u.rate=.9;u.pitch=.5;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
 
 // ---------- state
@@ -779,9 +780,9 @@ const FPSET={barbarian:(t,p)=>({idle:t>=5?(p.cd1>0?'barb_skull':'barb_skull_smok
  valkyrie:t=>({idle:t>=5?'valk_hold_spirit':t>=3?'valk_hold_glow':'valk_hold',fire:t>=3?'valk_empty':'valk_throw',at:.6,fire2:'valk_empty',at2:.12,filter:''}),
  wizard:t=>({idle:t>=3?'wiz_L_glow':'wiz_L_idle',fire:'wiz_L_glow',at:.3,filter:'',staff:t>=3?'wiz_S_glow':'wiz_S_idle',staffFire:'wiz_S_glow'})};
 const FPL={elf:{h:1,dy:0},barbarian:{h:1.04,dy:.3,dx:.2,vdx:.05},valkyrie:{h:.76,dy:.17},wizard:{h:1,dy:0}};
-let FP_OK=true;{let left=0;for(const n of ['barb_hold_iron','barb_rune','barb_rune_ghost','barb_skull','barb_skull_smoke','barb_skull_ghost','valk_empty','wiz_L_idle','wiz_L_glow','wiz_S_idle','wiz_S_glow','barb_hold','barb_hold_skull','barb_throw','barb_throw_skull','elf_draw','elf_draw_magic','elf_release','elf_release_magic','valk_hold','valk_hold_glow','valk_hold_spirit','valk_throw','wiz_idle','wiz_glow']){const im=new Image();left++;im.onerror=()=>{FP_OK=false};im.src='fp/'+n+'.webp'}}
+let FP_OK=true;{let left=0;for(const n of ['barb_hold_iron','barb_rune','barb_rune_ghost','barb_skull','barb_skull_smoke','barb_skull_ghost','valk_empty','wiz_L_idle','wiz_L_glow','wiz_S_idle','wiz_S_glow','barb_hold','barb_hold_skull','barb_throw','barb_throw_skull','elf_draw','elf_draw_magic','elf_release','elf_release_magic','valk_hold','valk_hold_glow','valk_hold_spirit','valk_throw','wiz_idle','wiz_glow']){const im=new Image();left++;im.onerror=()=>{FP_OK=false};im.src=V('fp/'+n+'.webp')}}
 function fpTick(){for(const p of humans()){const e=p.el;if(!e||!e.fp)continue;const vr=renderer.xr.isPresenting&&p.i===0;const show=FP_OK&&p.alive&&!vr;e.fpw.style.display=show?'':'none';if(!show)continue;
- const S=FPSET[p.hero](p.tier,p),firing=p.anim>S.at,src='fp/'+(firing?S.fire:S.fire2&&p.anim>S.at2?S.fire2:S.idle)+'.webp';if(e.fpSrc!==src){e.fpSrc=src;e.fp.src=src}
+ const S=FPSET[p.hero](p.tier,p),firing=p.anim>S.at,src='fp/'+(firing?S.fire:S.fire2&&p.anim>S.at2?S.fire2:S.idle)+'.webp';if(e.fpSrc!==src){e.fpSrc=src;e.fp.src=V(src)}
  const kick=firing?18:p.anim*10,swing=p.hero==='wizard'?-Math.sin(p.anim2*PI)*12:p.hero==='barbarian'?-Math.sin(p.anim2*PI)*8:0,glow=p.hero==='wizard'&&firing&&!SAFE.on?' brightness(1.35)':'';
  const L=FPL[p.hero],ph=e.root.clientHeight||innerHeight,pw=e.root.clientWidth||innerWidth,wz=e.wzb;if(!wz)e.fp.style.height=(L.h*100)+'%';
  e.fp.style.filter=(S.filter+glow).trim()||'none';(wz||e.fp).style.transform=`translate(${((L.dx||0)*pw-p.sway*60).toFixed(1)}px,${(L.dy*ph+Math.sin(p.bob)*7+kick*(wz?.4:1)).toFixed(1)}px) rotate(${(wz?0:swing).toFixed(1)}deg)`;
@@ -789,11 +790,11 @@ function fpTick(){for(const p of humans()){const e=p.el;if(!e||!e.fp)continue;co
   e.hl=(e.hl||0)+((p.anim>.05?1:0)-(e.hl||0))*(p.anim>.05?.45:.12);const hd=1-e.hl;
   e.fp.style.transformOrigin='6% 100%';e.fp.style.transform=`translate(-3%,${(hd*46).toFixed(1)}%) rotate(${(-hd*16).toFixed(1)}deg)`;
   const heal=now-(p.healAt||-1e9),sw=now-(p.staffAt||-1e9),upH=heal<1000?Math.min(1,heal/160,(1000-heal)/260):0,upS=sw<520?Math.min(1,sw/90,(520-sw)/200):0,up=clamp(Math.max(upH,upS),0,1),d=1-up*up*(3-2*up);
-  const s2='fp/'+(firing?S.staffFire:S.staff)+'.webp';if(e.fp2Src!==s2){e.fp2Src=s2;e.fp2.src=s2}
+  const s2='fp/'+(firing?S.staffFire:S.staff)+'.webp';if(e.fp2Src!==s2){e.fp2Src=s2;e.fp2.src=V(s2)}
   e.fp2.style.display=d>.98?'none':'';e.fp2.style.filter=glow?glow.trim():'none';e.fp2.style.transform=`translate(8%,${(d*88).toFixed(1)}%) rotate(${(d*16+(upS>0&&upH===0?-sw/520*10:0)).toFixed(1)}deg)`}}}
 
 const SPR={barbarian:{f:'barbarian',h:2.35},elf:{f:'elf',h:2.25},wizard:{f:'wizard',h:2.45},valkyrie:{f:'valkyrie',h:2.3,atk:'valkyrie_throw'}};
-const SPRTEX={},texLoader=new THREE.TextureLoader();
+const SPRTEX={},texLoader=new THREE.TextureLoader();{const _ld=texLoader.load.bind(texLoader);texLoader.load=(u,...a)=>_ld(V(u),...a)}
 function sprTex(name,cb){let e=SPRTEX[name];if(!e){e=SPRTEX[name]={tex:null,cbs:[]};try{texLoader.load('sprites/'+name+'.webp',t=>{t.encoding=THREE.sRGBEncoding;e.tex=t;for(const f of e.cbs)f(t);e.cbs=[]},undefined,()=>{e.cbs=[]})}catch(x){}}if(e.tex)cb(e.tex);else e.cbs.push(cb)}
 function cloneStrip(t){const c=t.clone();c.needsUpdate=true;c.repeat.set(1/8,1);c.wrapS=THREE.ClampToEdgeWrapping;return c}
 function addBillboard(b,hk){const S=SPR[hk],geo=new THREE.PlaneGeometry(S.h/2,S.h);geo.translate(0,S.h/2,0);
@@ -1150,7 +1151,7 @@ function flushAll(){for(const k in POOLS)POOLS[k].n=0;for(const k in GL)GL[k].n=
 // ---------- HUD
 function rects(n){const W=innerWidth,H=innerHeight,w2=Math.floor(W/2),h2=Math.floor(H/2);if(n<=1)return[{x:0,y:0,w:W,h:H}];if(n===2)return[{x:0,y:0,w:W,h:h2},{x:0,y:h2,w:W,h:H-h2}];return[{x:0,y:0,w:w2,h:h2},{x:w2,y:0,w:W-w2,h:h2},{x:0,y:h2,w:w2,h:H-h2},{x:w2,y:h2,w:W-w2,h:H-h2}]}
 function buildHud(){const h=$('#hud'),hs=humans();
- h.innerHTML=hs.map(p=>`<div class="ph" id="ph${p.i}" style="--c:${p.H.css}"><div class="fpw fpw-${p.hero}">${p.hero==='wizard'?'<div class="wzb"><img class="fp" alt=""><img class="fp2" alt=""></div>':'<img class="fp" alt="">'}</div><div class="vgn"></div><div class="flash"></div><div class="vig"></div><div class="angelsay"><img src="sprites/angel_face.webp" alt=""><div><b>Angel Princess</b><p></p></div></div><div class="cross"></div><div class="top"><b class="nm">${p.H.name}</b><span class="tier"></span><span class="score"></span></div><canvas class="mini" width="132" height="132"></canvas><div class="msg"></div><div class="bars"><div class="allies"></div><div class="inv"></div><div class="bar hp"><i></i><b class="shd"></b><em></em></div><div class="bar sec"><i></i><em></em></div></div><div class="dead"><div>${p.H.name} has fallen<br><small>Back on the next level if a friend reaches the exit</small></div></div></div>`).join('')+(hs.length===3?'<div class="ph" id="phmap"><canvas class="bigmap" width="300" height="300"></canvas></div>':'');
+ h.innerHTML=hs.map(p=>`<div class="ph" id="ph${p.i}" style="--c:${p.H.css}"><div class="fpw fpw-${p.hero}">${p.hero==='wizard'?'<div class="wzb"><img class="fp" alt=""><img class="fp2" alt=""></div>':'<img class="fp" alt="">'}</div><div class="vgn"></div><div class="flash"></div><div class="vig"></div><div class="angelsay"><img src="${V('sprites/angel_face.webp')}" alt=""><div><b>Angel Princess</b><p></p></div></div><div class="cross"></div><div class="top"><b class="nm">${p.H.name}</b><span class="tier"></span><span class="score"></span></div><canvas class="mini" width="132" height="132"></canvas><div class="msg"></div><div class="bars"><div class="allies"></div><div class="inv"></div><div class="bar hp"><i></i><b class="shd"></b><em></em></div><div class="bar sec"><i></i><em></em></div></div><div class="dead"><div>${p.H.name} has fallen<br><small>Back on the next level if a friend reaches the exit</small></div></div></div>`).join('')+(hs.length===3?'<div class="ph" id="phmap"><canvas class="bigmap" width="300" height="300"></canvas></div>':'');
  for(const p of hs){const r=$('#ph'+p.i),q=s=>r.querySelector(s);p.el={root:r,say:q('.angelsay'),fp:q('.fp'),fp2:q('.fp2'),wzb:q('.wzb'),fpw:q('.fpw'),flash:q('.flash'),vig:q('.vig'),tier:q('.tier'),score:q('.score'),mini:q('.mini'),msg:q('.msg'),inv:q('.inv'),allies:q('.allies'),hpI:q('.hp i'),hpB:q('.bar.hp'),shd:q('.shd'),secB:q('.bar.sec'),hpE:q('.hp em'),secI:q('.sec i'),secE:q('.sec em')}}
  layoutHud()}
 function layoutHud(){const hs=humans(),R=rects(hs.length);hs.forEach((p,i)=>{const s=p.el&&p.el.root.style,r=R[i];if(!s)return;s.left=r.x+'px';s.top=r.y+'px';s.width=r.w+'px';s.height=r.h+'px'});const m=$('#phmap');if(m){const r=R[3];Object.assign(m.style,{left:r.x+'px',top:r.y+'px',width:r.w+'px',height:r.h+'px'})}}
@@ -1455,7 +1456,7 @@ function vrArtTick(p){if(!VRART.on||!p.alive||(G&&G.paused)){vrArtHide();wizHide
 
 // ---------- hidden healing springs with an angel princess (levels 10, 12, 14 ...)
 const ANGEL_LINE='Brave hero, your quest is a hard one, and I wish to help you. Step into my healing waters and be restored.';
-const ANGEL_FACE=new Image();ANGEL_FACE.src='sprites/angel_face.webp';
+const ANGEL_FACE=new Image();ANGEL_FACE.src=V('sprites/angel_face.webp');
 function ripTex(){const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');for(let i=0;i<7;i++){x.strokeStyle=`rgba(255,245,210,${.55-i*.06})`;x.lineWidth=5-i*.5;x.beginPath();x.arc(128,128,30+i*15,0,TAU);x.stroke()}return new THREE.CanvasTexture(c)}
 function haloTex(){const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d'),gr=x.createRadialGradient(64,64,4,64,64,64);gr.addColorStop(0,'rgba(255,240,190,.9)');gr.addColorStop(.45,'rgba(255,220,150,.35)');gr.addColorStop(1,'rgba(255,210,140,0)');x.fillStyle=gr;x.fillRect(0,0,128,128);return new THREE.CanvasTexture(c)}
 function makePool(x,z){const grp=new THREE.Group();grp.position.set(x,0,z);
@@ -1555,14 +1556,14 @@ function setSafe(v){SAFE.on=!!v;document.body.classList.toggle('safe',SAFE.on);f
  setSafe(saved===null?rm:saved==='1');
  for(const id of ['bootSafe','safeFx']){const c=document.getElementById(id);if(c)c.addEventListener('change',()=>setSafe(c.checked))}
  const el=document.getElementById('boot');if(!el)return;
- for(const i of el.querySelectorAll('.bheroes i'))i.style.backgroundImage=`url(sprites/${i.dataset.s}.webp)`;
+ for(const i of el.querySelectorAll('.bheroes i'))i.style.backgroundImage=`url(${V('sprites/'+i.dataset.s+'.webp')})`;
  const fp=['barb_hold_iron','barb_throw','barb_rune','barb_rune_ghost','barb_skull','barb_skull_smoke','barb_skull_ghost','elf_draw','elf_release','elf_draw_magic','elf_release_magic','valk_hold','valk_hold_glow','valk_hold_spirit','valk_throw','valk_empty','wiz_L_idle','wiz_L_glow','wiz_S_idle','wiz_S_glow'];
  const sp=['angel','angel_face','elf','barbarian','wizard','valkyrie','valkyrie_throw','m_ghost','m_grunt','m_demon','m_gargoyle','m_lobber','m_sorcerer','m_naga','m_death','m_knife','m_knife5','m_eel','m_eel_top0','m_eel_top1','m_eel_top2','m_drowned','m_drownbrute','m_drowned_top','m_drownbrute_top'];
  const urls=[...fp.map(n=>'fp/'+n+'.webp'),...sp.map(n=>'sprites/'+n+'.webp')];
  const bar=document.getElementById('bootBar'),txt=document.getElementById('bootTxt'),go=document.getElementById('bootGo');let done=0,ready=false;
  const finish=()=>{if(ready)return;ready=true;bar.style.width='100%';txt.textContent='Ready. Please read the warnings below.';go.disabled=false;go.textContent='I understand — continue'};
  const step=()=>{done++;bar.style.width=Math.round(done/urls.length*100)+'%';txt.textContent=`Loading heroes and monsters… ${Math.round(done/urls.length*100)}%`;if(done>=urls.length)finish()};
- for(const u of urls){const im=new Image();im.onload=im.onerror=step;im.src=u}
+ for(const u of urls){const im=new Image();im.onload=im.onerror=step;im.src=V(u)}
  setTimeout(finish,15000);
  go.addEventListener('click',()=>{if(!ready)return;try{initAudio()}catch(x){}BOOTDONE=true;el.hidden=true;el.style.display='none';const b=document.getElementById('startBtn');if(b)b.focus()});
  // reopening the game (a phone or headset waking the old page, or coming back after a while) shows the warnings again
