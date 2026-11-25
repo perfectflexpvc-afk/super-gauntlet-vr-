@@ -20,7 +20,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:16px/1
 .fpw{position:absolute;inset:0;display:flex;justify-content:center;align-items:flex-end;overflow:hidden;pointer-events:none}
 .fpw img{height:78%;max-width:none;object-fit:contain;object-position:bottom;transform-origin:50% 100%;will-change:transform;-webkit-mask-image:linear-gradient(to right,transparent,#000 16%,#000 84%,transparent);mask-image:linear-gradient(to right,transparent,#000 16%,#000 84%,transparent)}
 .fpw .wzb{position:relative;flex:none;width:122%;aspect-ratio:16/9;margin-bottom:-14%;will-change:transform}
-.fpw .wzb img{position:absolute;left:0;top:0;width:100%;height:100%;-webkit-mask-image:none;mask-image:none;transform-origin:72% 100%}
+.fpw .wzb img{position:absolute;left:0;top:0;width:100%;height:100%;-webkit-mask-image:none;mask-image:none;transform-origin:28% 100%}
 .vgn{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,transparent 55%,rgba(0,0,0,.55) 100%)}
 .cross{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px;border:2px solid rgba(255,240,210,.7);border-radius:50%;box-shadow:0 0 6px rgba(255,200,120,.6)}
 .vig{position:absolute;inset:0;box-shadow:inset 0 0 160px 50px #c00;opacity:0}
@@ -490,7 +490,7 @@ const POOLS={
 const D=new THREE.Object3D();D.rotation.order='YXZ';const TC=new THREE.Color();
 
 // ---------- sound
-const BUILD='20261124203022',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
+const BUILD='20261124223616',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
 let AC=null,musicOn=true,musicT=0,step=0,nb=null;const lastS={};
 function initAudio(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const b=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;nb=b}if(AC.state==='suspended')AC.resume()}catch(e){AC=null}}
 function tone(f,d,type,v,f2,at){if(!AC)return;const t=at||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
@@ -788,10 +788,10 @@ function fpTick(){for(const p of humans()){const e=p.el;if(!e||!e.fp)continue;co
  e.fp.style.filter=(S.filter+glow).trim()||'none';(wz||e.fp).style.transform=`translate(${((L.dx||0)*pw-p.sway*60).toFixed(1)}px,${(L.dy*ph+Math.sin(p.bob)*7+kick*(wz?.4:1)).toFixed(1)}px) rotate(${(wz?0:swing).toFixed(1)}deg)`;
  if(wz&&e.fp2){const now=performance.now();
   e.hl=(e.hl||0)+((p.anim>.05?1:0)-(e.hl||0))*(p.anim>.05?.45:.12);const hd=1-e.hl;
-  e.fp.style.transformOrigin='6% 100%';e.fp.style.transform=`translate(-3%,${(hd*46).toFixed(1)}%) rotate(${(-hd*16).toFixed(1)}deg)`;
+  e.fp.style.transformOrigin='94% 100%';e.fp.style.transform=`translate(3%,${(hd*46).toFixed(1)}%) rotate(${(hd*16).toFixed(1)}deg)`;
   const heal=now-(p.healAt||-1e9),sw=now-(p.staffAt||-1e9),upH=heal<1000?Math.min(1,heal/160,(1000-heal)/260):0,upS=sw<520?Math.min(1,sw/90,(520-sw)/200):0,up=clamp(Math.max(upH,upS),0,1),d=1-up*up*(3-2*up);
   const s2='fp/'+(firing?S.staffFire:S.staff)+'.webp';if(e.fp2Src!==s2){e.fp2Src=s2;e.fp2.src=V(s2)}
-  e.fp2.style.display=d>.98?'none':'';e.fp2.style.filter=glow?glow.trim():'none';e.fp2.style.transform=`translate(8%,${(d*88).toFixed(1)}%) rotate(${(d*16+(upS>0&&upH===0?-sw/520*10:0)).toFixed(1)}deg)`}}}
+  e.fp2.style.display=d>.98?'none':'';e.fp2.style.filter=glow?glow.trim():'none';e.fp2.style.transform=`translate(-8%,${(d*88).toFixed(1)}%) rotate(${(-(d*16)+(upS>0&&upH===0?sw/520*10:0)).toFixed(1)}deg)`}}}
 
 const SPR={barbarian:{f:'barbarian',h:2.35},elf:{f:'elf',h:2.25},wizard:{f:'wizard',h:2.45},valkyrie:{f:'valkyrie',h:2.3,atk:'valkyrie_throw'}};
 const SPRTEX={},texLoader=new THREE.TextureLoader();{const _ld=texLoader.load.bind(texLoader);texLoader.load=(u,...a)=>_ld(V(u),...a)}
@@ -948,11 +948,11 @@ function hurtPlayer(p,amt){if(!p.alive||G.transT>0||G.over)return;if(p.buff==='w
 const fwd=p=>({x:-Math.sin(p.yaw),z:-Math.cos(p.yaw)});
 const XR={c:[],left:null,right:null,hud:null};
 function assistDir(p,dx,dz){let best=null,bd=.32;for(const e of G.enemies){if(e.dead||e.hidden)continue;const ex=e.x-p.x,ez=e.z-p.z,d=Math.hypot(ex,ez);if(d>20||d<.5)continue;const a=Math.acos(clamp((ex*dx+ez*dz)/d,-1,1));if(a<bd&&los(p.x,p.z,e.x,e.z)){bd=a;best=[ex/d,ez/d]}}return best}
-function aim(p){if(p.net){const y=p.aimYaw!==undefined?p.aimYaw:p.yaw;let dx=-Math.sin(y),dz=-Math.cos(y);if(p.assist){const a=assistDir(p,dx,dz);if(a){dx=a[0];dz=a[1]}}const w=p.hero==='wizard'?.38:0;return{dx,dz,ox:p.x+dx*.5+dz*w,oy:p.H.eye-(w?.55:.4),oz:p.z+dz*.5-dx*w}}
- if(p.i===0&&p.local&&renderer.xr.isPresenting&&p.hero==='wizard'&&VRART.on&&XR.left){XR.left.getWorldQuaternion(_q);_v.set(0,0,-1).applyQuaternion(_q);_v.y=0;if(_v.lengthSq()>1e-4){_v.normalize();XR.left.getWorldPosition(_v2);return{dx:_v.x,dz:_v.z,ox:p.x+_v.x*.5,oy:clamp(_v2.y,.6,2),oz:p.z+_v.z*.5}}}
+function aim(p){if(p.net){const y=p.aimYaw!==undefined?p.aimYaw:p.yaw;let dx=-Math.sin(y),dz=-Math.cos(y);if(p.assist){const a=assistDir(p,dx,dz);if(a){dx=a[0];dz=a[1]}}const w=p.hero==='wizard'?.38:0;return{dx,dz,ox:p.x+dx*.5-dz*w,oy:p.H.eye-(w?.55:.4),oz:p.z+dz*.5+dx*w}}
+ if(p.i===0&&p.local&&renderer.xr.isPresenting&&p.hero==='wizard'&&VRART.on&&XR.right){XR.right.getWorldQuaternion(_q);_v.set(0,0,-1).applyQuaternion(_q);_v.y=0;if(_v.lengthSq()>1e-4){_v.normalize();XR.right.getWorldPosition(_v2);return{dx:_v.x,dz:_v.z,ox:p.x+_v.x*.5,oy:clamp(_v2.y,.6,2),oz:p.z+_v.z*.5}}}
  if(p.local&&(p.ctrl==='touch'||(p.ctrl&&p.ctrl.startsWith('gp')))){const f=fwd(p),a=assistDir(p,f.x,f.z);if(a)return{dx:a[0],dz:a[1],ox:p.x+a[0]*.5,oy:p.H.eye-.4,oz:p.z+a[1]*.5}}
  if(p.i===0&&p.local&&renderer.xr.isPresenting&&XR.right&&!VRART.on){XR.right.getWorldQuaternion(_q);_v.set(0,0,-1).applyQuaternion(_q);_v.y=0;if(_v.lengthSq()>1e-4){_v.normalize();XR.right.getWorldPosition(_v2);return{dx:_v.x,dz:_v.z,ox:p.x+_v.x*.5,oy:clamp(_v2.y,.6,2),oz:p.z+_v.z*.5}}}
- const f=fwd(p);if(p.hero==='wizard')return{dx:f.x,dz:f.z,ox:p.x+f.x*.5+f.z*.38,oy:p.H.eye-.55,oz:p.z+f.z*.5-f.x*.38};return{dx:f.x,dz:f.z,ox:p.x+f.x*.5,oy:p.H.eye-.4,oz:p.z+f.z*.5}}
+ const f=fwd(p);if(p.hero==='wizard')return{dx:f.x,dz:f.z,ox:p.x+f.x*.5-f.z*.38,oy:p.H.eye-.55,oz:p.z+f.z*.5+f.x*.38};return{dx:f.x,dz:f.z,ox:p.x+f.x*.5,oy:p.H.eye-.4,oz:p.z+f.z*.5}}
 function shoot(p,kind,ang,o){const a=aim(p),c=Math.cos(ang),s=Math.sin(ang),dx=a.dx*c-a.dz*s,dz2=a.dx*s+a.dz*c;G.proj.push(Object.assign({kind,x:a.ox,y:a.oy,z:a.oz,vx:dx*o.speed,vz:dz2*o.speed,owner:p,hit:null,spin:Math.random()*6,tint:p.H.tint[p.tier-1],glow:p.H.glow[p.tier-1],tier:p.tier},o))}
 function fire(p){const t=p.tier,haste=p.buff==='haste'&&p.buffT>0?.62:1;
  if(p.hero==='barbarian'){const o={speed:17+t*2,dmg:7+t*3,pierce:t,life:1.6+t*.15,r:.75+t*.08,knock:9,stun:.7,scale:1+t*.1};shoot(p,'axe',0,o);if(t>=5){shoot(p,'axe',.12,Object.assign({},o));shoot(p,'axe',-.12,Object.assign({},o))}p.cool=p.H.rate*haste;sfx('axe')}
@@ -1295,7 +1295,7 @@ function clientUpdate(dt){const nr=NET.nr;let hp=null;
  if(nr&&performance.now()-NET.hostSeen>(NET.lastTick<0?35000:15000)&&!G.over){G.over=true;if(document.pointerLockElement)document.exitPointerLock();showTouch();showOver('Connection lost','The host’s game ended or this device lost the connection.')}
 
  if(nr&&(NET.sendT-=dt)<=0){NET.sendT=.05;const p=players[0];let ay=p.yaw,y=p.yaw;
-  if(renderer.xr.isPresenting){p.cam.getWorldDirection(_v);y=ay=Math.atan2(-_v.x,-_v.z);if(p.hero==='wizard'&&VRART.on&&XR.left){XR.left.getWorldQuaternion(_q);_v.set(0,0,-1).applyQuaternion(_q);if(Math.hypot(_v.x,_v.z)>.01)ay=Math.atan2(-_v.x,-_v.z)}else if(XR.right&&!VRART.on){XR.right.getWorldQuaternion(_q);_v.set(0,0,-1).applyQuaternion(_q);if(Math.hypot(_v.x,_v.z)>.01)ay=Math.atan2(-_v.x,-_v.z)}}
+  if(renderer.xr.isPresenting){p.cam.getWorldDirection(_v);y=ay=Math.atan2(-_v.x,-_v.z);if(p.hero==='wizard'&&VRART.on&&XR.right){XR.right.getWorldQuaternion(_q);_v.set(0,0,-1).applyQuaternion(_q);if(Math.hypot(_v.x,_v.z)>.01)ay=Math.atan2(-_v.x,-_v.z)}else if(XR.right&&!VRART.on){XR.right.getWorldQuaternion(_q);_v.set(0,0,-1).applyQuaternion(_q);if(Math.hypot(_v.x,_v.z)>.01)ay=Math.atan2(-_v.x,-_v.z)}}
   try{const r=nr.presence({me:{id:NET.myId,h:p.hero,dv:DEV,s:G.seed,x:+p.x.toFixed(2),z:+p.z.toFixed(2),y:+y.toFixed(3),ay:+ay.toFixed(3),mv:p.moving>.5?1:0,f:p.alive&&p.netFire?1:0,fc:NET.cnt.fc|0,a1:NET.cnt.a1,a2:NET.cnt.a2,pt:NET.cnt.pt,ea:NET.cnt.ea,as:(p.ctrl==='touch'||p.ctrl.startsWith('gp'))?1:0}});if(r&&r.catch)r.catch(()=>{})}catch(e){}}
  if(!G.lg)return;
  for(const p of players){if(p.puppet){const k=Math.min(1,dt*12);p.x+=(p.tx-p.x)*k;p.z+=(p.tz-p.z)*k;syncPlayer(p,false,dt)}else updatePlayer(p,dt)}
@@ -1430,12 +1430,12 @@ const VRH=1.3,VRZ=-.72,VRW=VRH*16/9;// the flat screen's frame, rebuilt at arm's
 const WH={hand:null,staff:null};const _wq=new THREE.Quaternion(),_wp=new THREE.Vector3();
 function wizHide(){if(WH.hand){WH.hand.visible=false;WH.staff.visible=false}}
 function wizHandsTick(p){if(!WH.hand){const mk=(w,h,ax,ay)=>{const g=new THREE.PlaneGeometry(w,h);g.translate(-(ax-.5)*w,(ay-.5)*h,0);const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({transparent:true,alphaTest:.05,side:THREE.DoubleSide,fog:false}));m.frustumCulled=false;m.renderOrder=985;scene.add(m);return m};
-  WH.hand=mk(.2,.3,.42,.58);WH.staff=mk(.62,.6,.62,.63)}
+  WH.hand=mk(.2,.3,.58,.58);WH.staff=mk(.62,.6,.38,.63)}
  const S=FPSET.wizard(p.tier),firing=p.anim>S.at,hn=firing||p.tier>=3?'wiz_hand_glow':'wiz_hand_idle',sn=firing||p.tier>=3?'wiz_staff_glow':'wiz_staff_idle';
  for(const [m,n] of [[WH.hand,hn],[WH.staff,sn]])if(m.userData.src!==n){m.userData.src=n;m.material.map=vrTex(n);m.material.needsUpdate=true}
  p.cam.getWorldQuaternion(_wq);
- XR.left.getWorldPosition(_wp);WH.hand.position.copy(_wp);WH.hand.position.y+=.05;WH.hand.quaternion.copy(_wq);WH.hand.visible=true;
- XR.right.getWorldPosition(_wp);WH.staff.position.copy(_wp);WH.staff.quaternion.copy(_wq);if(p.anim2>0)WH.staff.rotateZ(-Math.sin(p.anim2*PI)*.6);WH.staff.visible=true}
+ XR.right.getWorldPosition(_wp);WH.hand.position.copy(_wp);WH.hand.position.y+=.05;WH.hand.quaternion.copy(_wq);WH.hand.visible=true;
+ XR.left.getWorldPosition(_wp);WH.staff.position.copy(_wp);WH.staff.quaternion.copy(_wq);if(p.anim2>0)WH.staff.rotateZ(Math.sin(p.anim2*PI)*.6);WH.staff.visible=true}
 function vrArtTick(p){if(!VRART.on||!p.alive||(G&&G.paused)){vrArtHide();wizHide();return}
  if(p.hero==='wizard'&&XR.left&&XR.right){vrArtHide();wizHandsTick(p);return}wizHide();
  let P=VRART.planes[p.hero];const wiz=p.hero==='wizard',L=FPL[p.hero];
