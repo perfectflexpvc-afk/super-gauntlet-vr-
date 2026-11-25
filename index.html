@@ -490,7 +490,7 @@ const POOLS={
 const D=new THREE.Object3D();D.rotation.order='YXZ';const TC=new THREE.Color();
 
 // ---------- sound
-const BUILD='20261125100331',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
+const BUILD='20261125100411',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
 let AC=null,musicOn=true,musicT=0,step=0,nb=null;const lastS={};
 function initAudio(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const b=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;nb=b}if(AC.state==='suspended')AC.resume()}catch(e){AC=null}}
 function tone(f,d,type,v,f2,at){if(!AC)return;const t=at||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
@@ -1452,7 +1452,7 @@ function wmLoad(){if(WM.state)return;WM.state=1;
  const tex=n=>{const t=texLoader.load('fp/'+n+'.jpg');t.encoding=THREE.sRGBEncoding;return t};
  const mat=t=>new THREE.MeshLambertMaterial({map:t,emissive:0xffffff,emissiveMap:t,emissiveIntensity:.4,side:THREE.DoubleSide});
  const mk=(g,m)=>{const x=new THREE.Mesh(g,m);x.frustumCulled=false;x.renderOrder=986;return x};
- Promise.all(['wiz_arm_r','wiz_arm_l'].map(n=>fetch(V('fp/'+n+'.bin')).then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()}))).then(([br,bl])=>{
+ Promise.all(['wiz_arm_r','wiz_arm_l'].map(n=>fetch(V('fp/'+n+'.txt')).then(r=>{if(!r.ok)throw 0;return r.text()}).then(t=>{const b=atob(t.trim()),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u.buffer}))).then(([br,bl])=>{
   const R=wmPart(br),L=wmPart(bl),tr=tex('wiz_arm_r'),tl=tex('wiz_arm_l');
   WM.r=new THREE.Group();WM.r.add(mk(R.arm,mat(tr)));WM.disk=mk(R.disk,new THREE.MeshBasicMaterial({map:tr,side:THREE.DoubleSide}));WM.r.add(WM.disk);
   WM.l=new THREE.Group();WM.l.add(mk(L.staff,mat(tl)));WM.r.visible=WM.l.visible=false;WH.mr=WM.r;WH.ml=WM.l;WM.state=2}).catch(()=>{WM.state=3})}
