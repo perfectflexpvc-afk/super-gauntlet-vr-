@@ -490,7 +490,7 @@ const POOLS={
 const D=new THREE.Object3D();D.rotation.order='YXZ';const TC=new THREE.Color();
 
 // ---------- sound
-const BUILD='20261124223616',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
+const BUILD='20261125003917',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
 let AC=null,musicOn=true,musicT=0,step=0,nb=null;const lastS={};
 function initAudio(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const b=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;nb=b}if(AC.state==='suspended')AC.resume()}catch(e){AC=null}}
 function tone(f,d,type,v,f2,at){if(!AC)return;const t=at||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
@@ -780,7 +780,7 @@ const FPSET={barbarian:(t,p)=>({idle:t>=5?(p.cd1>0?'barb_skull':'barb_skull_smok
  valkyrie:t=>({idle:t>=5?'valk_hold_spirit':t>=3?'valk_hold_glow':'valk_hold',fire:t>=3?'valk_empty':'valk_throw',at:.6,fire2:'valk_empty',at2:.12,filter:''}),
  wizard:t=>({idle:t>=3?'wiz_L_glow':'wiz_L_idle',fire:'wiz_L_glow',at:.3,filter:'',staff:t>=3?'wiz_S_glow':'wiz_S_idle',staffFire:'wiz_S_glow'})};
 const FPL={elf:{h:1,dy:0},barbarian:{h:1.04,dy:.3,dx:.2,vdx:.05},valkyrie:{h:.76,dy:.17},wizard:{h:1,dy:0}};
-let FP_OK=true;{let left=0;for(const n of ['barb_hold_iron','barb_rune','barb_rune_ghost','barb_skull','barb_skull_smoke','barb_skull_ghost','valk_empty','wiz_L_idle','wiz_L_glow','wiz_S_idle','wiz_S_glow','barb_hold','barb_hold_skull','barb_throw','barb_throw_skull','elf_draw','elf_draw_magic','elf_release','elf_release_magic','valk_hold','valk_hold_glow','valk_hold_spirit','valk_throw','wiz_idle','wiz_glow']){const im=new Image();left++;im.onerror=()=>{FP_OK=false};im.src=V('fp/'+n+'.webp')}}
+let FP_OK=true;{let left=0;for(const n of ['barb_hold_iron','barb_rune','barb_rune_ghost','barb_skull','barb_skull_smoke','barb_skull_ghost','valk_empty','vr_hand_r','vr_staff_l','vr_sleeve_r','vr_sleeve_l','wiz_L_idle','wiz_L_glow','wiz_S_idle','wiz_S_glow','barb_hold','barb_hold_skull','barb_throw','barb_throw_skull','elf_draw','elf_draw_magic','elf_release','elf_release_magic','valk_hold','valk_hold_glow','valk_hold_spirit','valk_throw','wiz_idle','wiz_glow']){const im=new Image();left++;im.onerror=()=>{FP_OK=false};im.src=V('fp/'+n+'.webp')}}
 function fpTick(){for(const p of humans()){const e=p.el;if(!e||!e.fp)continue;const vr=renderer.xr.isPresenting&&p.i===0;const show=FP_OK&&p.alive&&!vr;e.fpw.style.display=show?'':'none';if(!show)continue;
  const S=FPSET[p.hero](p.tier,p),firing=p.anim>S.at,src='fp/'+(firing?S.fire:S.fire2&&p.anim>S.at2?S.fire2:S.idle)+'.webp';if(e.fpSrc!==src){e.fpSrc=src;e.fp.src=V(src)}
  const kick=firing?18:p.anim*10,swing=p.hero==='wizard'?-Math.sin(p.anim2*PI)*12:p.hero==='barbarian'?-Math.sin(p.anim2*PI)*8:0,glow=p.hero==='wizard'&&firing&&!SAFE.on?' brightness(1.35)':'';
@@ -1427,15 +1427,31 @@ function vrTex(n){let t=VRART.tex[n];if(!t){t=VRART.tex[n]=texLoader.load('fp/'+
 function vrPlane(w,h){const g=new THREE.PlaneGeometry(w,h);g.translate(0,h/2,0);const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({transparent:true,alphaTest:.03,depthTest:false,depthWrite:false,fog:false}));m.renderOrder=990;m.frustumCulled=false;return m}
 function vrArtHide(){for(const k in VRART.planes){const P=VRART.planes[k];P.a.visible=false;if(P.b)P.b.visible=false}}
 const VRH=1.3,VRZ=-.72,VRW=VRH*16/9;// the flat screen's frame, rebuilt at arm's length
-const WH={hand:null,staff:null};const _wq=new THREE.Quaternion(),_wp=new THREE.Vector3();
-function wizHide(){if(WH.hand){WH.hand.visible=false;WH.staff.visible=false}}
-function wizHandsTick(p){if(!WH.hand){const mk=(w,h,ax,ay)=>{const g=new THREE.PlaneGeometry(w,h);g.translate(-(ax-.5)*w,(ay-.5)*h,0);const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({transparent:true,alphaTest:.05,side:THREE.DoubleSide,fog:false}));m.frustumCulled=false;m.renderOrder=985;scene.add(m);return m};
-  WH.hand=mk(.2,.3,.58,.58);WH.staff=mk(.62,.6,.38,.63)}
- const S=FPSET.wizard(p.tier),firing=p.anim>S.at,hn=firing||p.tier>=3?'wiz_hand_glow':'wiz_hand_idle',sn=firing||p.tier>=3?'wiz_staff_glow':'wiz_staff_idle';
- for(const [m,n] of [[WH.hand,hn],[WH.staff,sn]])if(m.userData.src!==n){m.userData.src=n;m.material.map=vrTex(n);m.material.needsUpdate=true}
- p.cam.getWorldQuaternion(_wq);
- XR.right.getWorldPosition(_wp);WH.hand.position.copy(_wp);WH.hand.position.y+=.05;WH.hand.quaternion.copy(_wq);WH.hand.visible=true;
- XR.left.getWorldPosition(_wp);WH.staff.position.copy(_wp);WH.staff.quaternion.copy(_wq);if(p.anim2>0)WH.staff.rotateZ(Math.sin(p.anim2*PI)*.6);WH.staff.visible=true}
+// VR Wizard: your right hand is his glowing magic hand on its sleeve; your left holds the staff on the other sleeve.
+// Each hand turns freely at the wrist with the controller, and each sleeve reaches back from the wrist toward your shoulder.
+const WH={hand:null,staff:null,sr:null,sl:null};const _wq=new THREE.Quaternion(),_wp=new THREE.Vector3(),_m4=new THREE.Matrix4(),_X=new THREE.Vector3(),_Y=new THREE.Vector3(),_Z=new THREE.Vector3(),_hd=new THREE.Vector3(),_sh=new THREE.Vector3(),_cr=new THREE.Vector3(),_wr=new THREE.Vector3(),_f=new THREE.Vector3();
+const WHD={hand:{w:.21,h:.26,g:[.6,.86],wr:[.6,.86]},staff:{w:.33,h:.84,g:[.55,.74],wr:[.31,.83]}};
+let p0=null;
+function wizHide(){for(const k in WH)if(WH[k])WH[k].visible=false}
+function whMesh(name,w,h,ax,ay,order){const g=new THREE.PlaneGeometry(w,h);g.translate((.5-ax)*w,(ay-.5)*h,0);const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:vrTex(name),transparent:true,alphaTest:.05,side:THREE.DoubleSide,fog:false}));m.frustumCulled=false;m.renderOrder=order;scene.add(m);return m}
+function faceBasis(pos,dir){p0.cam.getWorldPosition(_Z);_Z.sub(pos);if(_Z.lengthSq()<1e-6)_Z.set(0,0,1);_Z.normalize();_Y.copy(dir).addScaledVector(_Z,-dir.dot(_Z));if(_Y.lengthSq()<1e-6)_Y.set(0,1,0);_Y.normalize();_X.crossVectors(_Y,_Z).normalize();_m4.makeBasis(_X,_Y,_Z);return _m4}
+function placeSleeve(m,wrist,shoulder,rightArm){const L=clamp(wrist.distanceTo(shoulder),.22,.5);_f.copy(rightArm?shoulder:wrist).sub(rightArm?wrist:shoulder);
+ p0.cam.getWorldPosition(_Z);_hd.copy(wrist).add(shoulder).multiplyScalar(.5);_Z.sub(_hd).normalize();_X.copy(_f).addScaledVector(_Z,-_f.dot(_Z));if(_X.lengthSq()<1e-6)_X.set(1,0,0);_X.normalize();_Y.crossVectors(_Z,_X).normalize();
+ _m4.makeBasis(_X,_Y,_Z);m.quaternion.setFromRotationMatrix(_m4);m.position.copy(wrist);m.scale.set(L,L*.17,1);m.visible=true}
+function wizHandsTick(p){p0=p;if(!WH.hand){WH.hand=whMesh('vr_hand_r',WHD.hand.w,WHD.hand.h,.6,.86,986);WH.staff=whMesh('vr_staff_l',WHD.staff.w,WHD.staff.h,.55,.74,986);
+  const sg=(name,right)=>{const g=new THREE.PlaneGeometry(1,1);g.translate(right?.5:-.5,0,0);const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:vrTex(name),transparent:true,alphaTest:.05,side:THREE.DoubleSide,fog:false}));m.frustumCulled=false;m.renderOrder=984;scene.add(m);return m};
+  WH.sr=sg('vr_sleeve_r',true);WH.sl=sg('vr_sleeve_l',false)}
+ const firing=p.anim>.05;
+ p.cam.getWorldPosition(_hd);const hx=_hd.x,hy=_hd.y,hz=_hd.z;p.cam.getWorldQuaternion(_wq);_cr.set(1,0,0).applyQuaternion(_wq);_cr.y=0;if(_cr.lengthSq()<1e-6)_cr.set(1,0,0);_cr.normalize();const crx=_cr.x,crz=_cr.z;
+ // right: magic hand (pivots at the wrist, points where the controller points, kicks a little when casting)
+ XR.right.getWorldPosition(_wp);XR.right.getWorldQuaternion(_wq);_f.set(0,0,-1).applyQuaternion(_wq);
+ WH.hand.quaternion.setFromRotationMatrix(faceBasis(_wp,_f));WH.hand.position.copy(_wp).addScaledVector(_f,firing?.03*p.anim:0);WH.hand.visible=true;
+ _wr.copy(_wp);_sh.set(hx+crx*.19,hy-.27,hz+crz*.19);placeSleeve(WH.sr,_wr,_sh,true);
+ // left: staff in the fist; its sleeve meets the cuff just behind the fist
+ XR.left.getWorldPosition(_wp);XR.left.getWorldQuaternion(_wq);_f.set(0,0,-1).applyQuaternion(_wq);_f.y+=.35;_f.normalize();
+ WH.staff.quaternion.setFromRotationMatrix(faceBasis(_wp,_f));if(p.anim2>0)WH.staff.rotateZ(Math.sin(p.anim2*PI)*.7);WH.staff.position.copy(_wp);WH.staff.visible=true;
+ const S=WHD.staff;_wr.copy(_wp).addScaledVector(_X,(S.wr[0]-S.g[0])*S.w).addScaledVector(_Y,(S.g[1]-S.wr[1])*S.h);
+ _sh.set(hx-crx*.19,hy-.27,hz-crz*.19);placeSleeve(WH.sl,_wr,_sh,false)}
 function vrArtTick(p){if(!VRART.on||!p.alive||(G&&G.paused)){vrArtHide();wizHide();return}
  if(p.hero==='wizard'&&XR.left&&XR.right){vrArtHide();wizHandsTick(p);return}wizHide();
  let P=VRART.planes[p.hero];const wiz=p.hero==='wizard',L=FPL[p.hero];
@@ -1557,7 +1573,7 @@ function setSafe(v){SAFE.on=!!v;document.body.classList.toggle('safe',SAFE.on);f
  for(const id of ['bootSafe','safeFx']){const c=document.getElementById(id);if(c)c.addEventListener('change',()=>setSafe(c.checked))}
  const el=document.getElementById('boot');if(!el)return;
  for(const i of el.querySelectorAll('.bheroes i'))i.style.backgroundImage=`url(${V('sprites/'+i.dataset.s+'.webp')})`;
- const fp=['barb_hold_iron','barb_throw','barb_rune','barb_rune_ghost','barb_skull','barb_skull_smoke','barb_skull_ghost','elf_draw','elf_release','elf_draw_magic','elf_release_magic','valk_hold','valk_hold_glow','valk_hold_spirit','valk_throw','valk_empty','wiz_L_idle','wiz_L_glow','wiz_S_idle','wiz_S_glow'];
+ const fp=['barb_hold_iron','barb_throw','barb_rune','barb_rune_ghost','barb_skull','barb_skull_smoke','barb_skull_ghost','elf_draw','elf_release','elf_draw_magic','elf_release_magic','valk_hold','valk_hold_glow','valk_hold_spirit','valk_throw','valk_empty','vr_hand_r','vr_staff_l','vr_sleeve_r','vr_sleeve_l','wiz_L_idle','wiz_L_glow','wiz_S_idle','wiz_S_glow'];
  const sp=['angel','angel_face','elf','barbarian','wizard','valkyrie','valkyrie_throw','m_ghost','m_grunt','m_demon','m_gargoyle','m_lobber','m_sorcerer','m_naga','m_death','m_knife','m_knife5','m_eel','m_eel_top0','m_eel_top1','m_eel_top2','m_drowned','m_drownbrute','m_drowned_top','m_drownbrute_top'];
  const urls=[...fp.map(n=>'fp/'+n+'.webp'),...sp.map(n=>'sprites/'+n+'.webp')];
  const bar=document.getElementById('bootBar'),txt=document.getElementById('bootTxt'),go=document.getElementById('bootGo');let done=0,ready=false;
