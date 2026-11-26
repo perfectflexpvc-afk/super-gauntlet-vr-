@@ -296,7 +296,7 @@ const POOLS={
 const D=new THREE.Object3D();D.rotation.order='YXZ';const TC=new THREE.Color();
 
 // ---------- sound
-const BUILD='20261125174347',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
+const BUILD='20261126081217',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
 let AC=null,musicOn=true,musicT=0,step=0,nb=null;const lastS={};
 function initAudio(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const b=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;nb=b}if(AC.state==='suspended')AC.resume()}catch(e){AC=null}}
 function tone(f,d,type,v,f2,at){if(!AC)return;const t=at||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
@@ -311,21 +311,21 @@ function sfx(name){const n=performance.now();if(lastS[name]&&n-lastS[name]<45)re
  case 'up':[523,659,784,1047].forEach((f,i)=>tone(f,.14,'square',.05,0,at+i*.08));break;case 'gen':noise(.5,.3,600);tone(120,.4,'square',.06,40);break;case 'fireball':tone(300,.25,'sawtooth',.03,120);break;case 'lob':tone(260,.2,'triangle',.04,520);break;case 'thud':noise(.25,.2,400);break;}}
 const RIFF=[40,40,52,40,43,43,55,43,38,38,50,38,45,47,48,47];
 // your "Dungeon Master" soundtrack: one part per level, at 40% volume so the sound effects stay clear
-const SONGS=[1,2,3,4].map(n=>`music/dungeon-master-${n}.mp3`),BGM=new Audio();BGM.loop=true;BGM.preload='auto';BGM.volume=.4;let bgmSrc='',bgmT=-9999;
+const SONGS=[1,2,3,4].map(n=>`music/dungeon-master-${n}.mp3`),BGM=new Audio();BGM.loop=true;BGM.preload='auto';BGM.volume=.2;let bgmSrc='',bgmT=-9999;
 const songFor=()=>G.treasure?G.level%SONGS.length:(G.level-1)%SONGS.length;
 // angel levels play "Healing Waters" instead, faint far away and loud by her spring, and from her direction
 const ANGEL_SONG='music/healing-waters.mp3';let BGMR=null;const _ad=new THREE.Vector3();
-function bgmRoute(){if(BGMR!==null||!AC)return;try{const s=AC.createMediaElementSource(BGM),g=AC.createGain(),pan=AC.createStereoPanner?AC.createStereoPanner():null;if(pan){s.connect(pan);pan.connect(g)}else s.connect(g);g.connect(AC.destination);g.gain.value=.4;BGM.volume=1;BGMR={g,pan}}catch(e){BGMR=false}}
-function musicMix(){let vol=.4,pan=0;const pl=G&&G.pools&&G.pools[0];
+function bgmRoute(){if(BGMR!==null||!AC)return;try{const s=AC.createMediaElementSource(BGM),g=AC.createGain(),pan=AC.createStereoPanner?AC.createStereoPanner():null;if(pan){s.connect(pan);pan.connect(g)}else s.connect(g);g.connect(AC.destination);g.gain.value=.2;BGM.volume=1;BGMR={g,pan}}catch(e){BGMR=false}}
+function musicMix(){let vol=.2,pan=0;const pl=G&&G.pools&&G.pools[0];
  if(pl){let best=null,bd=1e9;for(const p of players)if(p.local&&p.alive){const d=Math.hypot(p.x-pl.x,p.z-pl.z);if(d<bd){bd=d;best=p}}
-  if(best){const k=clamp(1-(bd-3)/50,0,1);vol=.05+.9*k*k;try{best.cam.getWorldDirection(_ad);const fx=_ad.x,fz=_ad.z,fl=Math.hypot(fx,fz)||1,ux=(pl.x-best.x)/(bd||1),uz=(pl.z-best.z)/(bd||1);pan=bd>2.5?clamp((ux*(-fz/fl)+uz*(fx/fl))*.85,-.85,.85):0}catch(e){}}else vol=.05}
+  if(best){const k=clamp(1-(bd-3)/50,0,1);vol=.025+.45*k*k;try{best.cam.getWorldDirection(_ad);const fx=_ad.x,fz=_ad.z,fl=Math.hypot(fx,fz)||1,ux=(pl.x-best.x)/(bd||1),uz=(pl.z-best.z)/(bd||1);pan=bd>2.5?clamp((ux*(-fz/fl)+uz*(fx/fl))*.85,-.85,.85):0}catch(e){}}else vol=.025}
  bgmRoute();if(BGMR){const g=BGMR.g.gain;g.value+=(vol-g.value)*.06;if(BGMR.pan){const pp=BGMR.pan.pan;pp.value+=(pan-pp.value)*.1}}else BGM.volume=clamp(BGM.volume+(vol-BGM.volume)*.06,0,1)}
 // the menu's looping "ahh": starts after the warning screen, gapless, fades out when the dungeon music begins
 let BOOTDONE=!document.getElementById('boot');const MENU={buf:null,src:null,g:null,loading:false};
 function menuLoopTick(){if(!AC)return;const want=musicOn&&BOOTDONE&&!$('#menu').hidden;
  if(want&&!MENU.buf&&!MENU.loading){MENU.loading=true;fetch(V('music/menu-loop.wav')).then(r=>r.arrayBuffer()).then(b=>new Promise((ok,no)=>{const p=AC.decodeAudioData(b,ok,no);if(p&&p.then)p.then(ok,no)})).then(buf=>{MENU.buf=buf}).catch(()=>{MENU.loading=false})}
  if(want&&MENU.buf&&!MENU.src){if(!MENU.g){MENU.g=AC.createGain();MENU.g.gain.value=0;MENU.g.connect(AC.destination)}const s=AC.createBufferSource();s.buffer=MENU.buf;s.loop=true;s.loopStart=3.0;s.loopEnd=MENU.buf.duration;s.connect(MENU.g);s.start();MENU.src=s}
- if(MENU.g){const t=want?.55:0;MENU.g.gain.value+=(t-MENU.g.gain.value)*(want?.04:.08);if(!want&&MENU.src&&MENU.g.gain.value<.01){try{MENU.src.stop()}catch(e){}MENU.src=null}}}
+ if(MENU.g){const t=want?.275:0;MENU.g.gain.value+=(t-MENU.g.gain.value)*(want?.04:.08);if(!want&&MENU.src&&MENU.g.gain.value<.01){try{MENU.src.stop()}catch(e){}MENU.src=null}}}
 function music(){menuLoopTick();const want=musicOn&&G&&!G.demo&&!G.over&&!G.paused&&!!G.lg;if(!want){if(!BGM.paused)BGM.pause();return}
  musicMix();const src=G.pools&&G.pools.length?ANGEL_SONG:G.flood?'music/flooded-dungeon.mp3':G.level>15?'music/dig-down.mp3':SONGS[songFor()];if(src!==bgmSrc){bgmSrc=src;BGM.src=V(src);bgmT=-9999}
  if(BGM.paused&&performance.now()-bgmT>1500){bgmT=performance.now();try{const r=BGM.play();if(r&&r.catch)r.catch(()=>{})}catch(e){}}}
@@ -407,9 +407,10 @@ function buildLevel(){
  const put=(type,n,arr)=>{for(let k=0;k<n;k++){const p=wc(take(arr||cells));addItem(type,p[0],p[1])}};
  if(tr){put('treasure',34,roomCells.length?roomCells:cells);put('food',3);put('charm',2);put('potion',2);put('key',1);for(let k=0;k<8;k++){const p=wc(take(cells));addChest(p[0],p[1])}G.timer=35}
  else{
-  const types=['ghost'];if(lv>=2)types.push('grunt');if(lv>=3)types.push('demon','gargoyle');if(lv>=4)types.push('lobber');if(lv>=5)types.push('sorcerer','naga');
+  // monster schedule: only ghosts and green grunts for levels 1-8, then one new kind a level; snake trolls at 15, fire devils at 20, Death at 25
+  const types=['ghost','grunt'];for(const [L,t] of [[9,'gargoyle'],[10,'lobber'],[11,'sorcerer'],[15,'naga'],[20,'demon']])if(lv>=L)types.push(t);
   const ng=Math.min(3+lv*1.5,22)|0;for(let k=0;k<ng;k++){const c=take(roomCells.length?roomCells:cells);addGen(types[rnd(types.length)],c[0]*T+T/2,c[1]*T+T/2)}
-  if(lv>=6&&Math.random()<.65){const c=take(roomCells.length?roomCells:cells);addGen('death',c[0]*T+T/2,c[1]*T+T/2)}
+  if(lv>=25&&Math.random()<.65){const c=take(roomCells.length?roomCells:cells);addGen('death',c[0]*T+T/2,c[1]*T+T/2)}
   put('food',3+rnd(2)+Math.floor(lv/3));put('potion',1+(lv%2));put('charm',1);put('treasure',4+lv);for(let k=0;k<3+rnd(3);k++){const p=wc(take(cells));addChest(p[0],p[1])}
   let groups=0;const seen=new Uint8Array(W*H);for(let k=0;k<W*H;k++)if(g[k]===2&&!seen[k]){groups++;const st=[k];seen[k]=1;while(st.length){const c=st.pop();for(const d of [1,-1,W,-W]){const n=c+d;if(n>=0&&n<W*H&&g[n]===2&&!seen[n]){seen[n]=1;st.push(n)}}}}
   const reach=new Uint8Array(W*H),q=[L.start.cy*W+L.start.cx];reach[q[0]]=1;while(q.length){const c=q.pop();for(const d of [1,-1,W,-W]){const n=c+d;if(n>=0&&n<W*H&&g[n]===0&&!reach[n]){reach[n]=1;q.push(n)}}}
