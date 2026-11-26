@@ -490,7 +490,7 @@ const POOLS={
 const D=new THREE.Object3D();D.rotation.order='YXZ';const TC=new THREE.Color();
 
 // ---------- sound
-const BUILD='20261126130005',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
+const BUILD='20261126130914',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
 let AC=null,musicOn=true,musicT=0,step=0,nb=null;const lastS={};
 function initAudio(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const b=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;nb=b}if(AC.state==='suspended')AC.resume()}catch(e){AC=null}}
 function tone(f,d,type,v,f2,at){if(!AC)return;const t=at||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
@@ -576,7 +576,7 @@ function buildLevel(){
  const lg=G.lg=new THREE.Group();scene.add(lg);
  if(G.net!=='client')G.seed=(Math.random()*2e9)|0;RNG=mulberry(G.seed);G.genId=0;G.chestId=0;
  const tr=G.treasure,lv=G.level,L=genLevel(lv,tr),W=L.W,H=L.H,g=L.g;
- Object.assign(G,{W,H,g,enemies:[],proj:[],eproj:[],rocks:[],items:[],gens:[],chests:[],parts:[],fx:[],sconces:[],doorMesh:new Map(),doorHp:new Map(),crack:new Map(),flood:null,pools:[],secret:L.secret||null,secretOpen:false,transT:0,flowT:0,lightT:0});
+ Object.assign(G,{W,H,g,enemies:[],proj:[],eproj:[],rocks:[],items:[],gens:[],chests:[],parts:[],fx:[],sconces:[],doorMesh:new Map(),doorHp:new Map(),crack:new Map(),flood:null,deathCalm:false,pools:[],secret:L.secret||null,secretOpen:false,transT:0,flowT:0,lightT:0});
  G.dist=new Uint16Array(W*H);G.hdist=new Uint16Array(W*H);G.q=new Int32Array(W*H);G.head=new Int32Array(W*H);
  const isWall=k=>g[k]===1,mm=new THREE.Matrix4(),qq=new THREE.Quaternion(),one=new THREE.Vector3(1,1,1);
  const vis=[],faces=[];for(let j=0;j<H;j++)for(let i=0;i<W;i++){const k=j*W+i;if(!isWall(k))continue;let near=false;for(const [a,b] of N8){const x=i+a,y=j+b;if(x>=0&&y>=0&&x<W&&y<H&&!isWall(y*W+x)){near=true;if((!a||!b)&&g[y*W+x]===0)faces.push([i,j,a,b])}}if(near)vis.push([i,j])}
@@ -950,7 +950,10 @@ function breakAround(x,z,R,dmg,p){const i0=Math.floor((x-R)/T),i1=Math.floor((x+
 // ---------- combat
 function hurtEnemy(e,dmg,p,kx,kz,stun){if(e.dead)return;const D0=EDEF[e.type];if(D0.death){sfx('clang');burst(e.x,1.5,e.z,0xc0c0c0,3,2);return}if(e.hidden)return;if(p&&p.buff==='might'&&p.buffT>0)dmg*=2;e.hp-=dmg;e.flash=.12;if(kx!==undefined){e.kx=kx;e.kz=kz}if(stun)e.stun=Math.max(e.stun,stun);sfx('hit');if(e.hp<=0)killEnemy(e,p)}
 function killEnemy(e,p){if(e.dead)return;e.dead=true;const D0=EDEF[e.type];burst(e.x,1.2,e.z,D0.burst,12,5);sfx('kill');
- if(p){p.score+=D0.pts;p.kills++;gainPower(p,D0.death?20:1);if(D0.death)pmsg(p,'Death destroyed! +1000')}for(const w of players)if(w.hero==='wizard'&&w.alive)w.mana=Math.min(100,w.mana+(w===p?4:1))}
+ if(p){p.score+=D0.pts;p.kills++;gainPower(p,D0.death?20:1);if(D0.death)pmsg(p,'Death destroyed! +1000')}for(const w of players)if(w.hero==='wizard'&&w.alive)w.mana=Math.min(100,w.mana+(w===p?4:1));
+ // killing Death silences the whole level: every monster on the map falls at once, and generators only wake again if you walk right up to them
+ if(D0.death&&p&&!G.deathCalm){G.deathCalm=true;for(const o of G.enemies)if(!o.dead){o.dead=true;burst(o.x,1.2,o.z,EDEF[o.type].burst,6,4)}G.flash=1;sfx('potion');
+  banner('Death is destroyed!','Every monster falls. Stay clear of the generators and the way to the exit is quiet',3.5);for(const q of humans())rumble(q,500,1)}}
 function hurtGen(gn,d,p){if(gn.dead)return;gn.hp-=d;burst(gn.x,.8,gn.z,0xc8b8a0,4);if(gn.hp<=0){gn.dead=true;G.lg.remove(gn.mesh);burst(gn.x,.8,gn.z,0xe8e0c8,30,7);sfx('gen');if(p){p.score+=50;gainPower(p,3)}if(G.level===1&&!G.treasure&&!G.saidStrength){G.saidStrength=true;voice('strength')}G.gens=G.gens.filter(g=>!g.dead);drawMapBase()}}
 function openChest(c,p){if(c.open)return;c.open=true;if(p&&p.local)rumble(p,70,.35);G.lg.remove(c.mesh);burst(c.x,.6,c.z,0xd0a040,16);G.chests=G.chests.filter(x=>!x.open);const r=Math.random();
  if(r<.06&&!G.treasure){for(let k=0;k<6;k++)spawnEnemy('ghost',c.x+rf(-2,2),c.z+rf(-2,2));if(p)pmsg(p,'A trap! Ghosts burst out');sfx('hurt');return}
@@ -1062,7 +1065,7 @@ function syncPlayer(p,vr,dt){p.dolly.position.set(p.x,0,p.z);p.dolly.rotation.y=
  if(vr)p.vm.root.visible=!VRART.on;
  if(vr&&XR.right&&p.vm.root.parent!==XR.right){XR.right.add(p.vm.root);p.vm.root.position.set(-p.vm.hand[0],-p.vm.hand[1],-p.vm.hand[2]);setLayer(p.vm.root,0)}}
 function spawnFromGens(dt){if(G.transT>0)return;if(G.genFrz>0){G.genFrz-=dt;return}for(const g of G.gens){g.t-=dt;if(Math.random()<dt*4)G.parts.push({x:g.x+rf(-.4,.4),y:.7,z:g.z+rf(-.4,.4),vx:0,vy:rf(1,2.5),vz:0,life:rf(.5,1),c:EDEF[g.type].gen,g:true,ng:true});
- if(g.t>0)continue;g.t=g.rate*rf(.7,1.3);if(G.enemies.length>=G.cap)continue;const n=nearest(g);if(!n||n.d>42)continue;const a=Math.random()*TAU;spawnEnemy(g.type,g.x+Math.cos(a)*1.5,g.z+Math.sin(a)*1.5)}}
+ if(g.t>0)continue;g.t=g.rate*rf(.7,1.3);if(G.enemies.length>=G.cap)continue;const n=nearest(g);if(!n||n.d>(G.deathCalm?9:42))continue;const a=Math.random()*TAU;spawnEnemy(g.type,g.x+Math.cos(a)*1.5,g.z+Math.sin(a)*1.5)}}
 function updateEnemies(dt){const W=G.W,E=G.enemies,wiz=players.filter(p=>p.hero==='wizard'&&p.alive),kd=Math.pow(.02,dt);
  for(let k=0;k<E.length;k++){const e=E[k];if(e.dead)continue;if(e.frz>0){e.frz-=dt;continue}const D0=EDEF[e.type];e.atk-=dt;e.stun-=dt;e.flash-=dt;
   if(e.kx||e.kz){e.x+=e.kx*dt;e.z+=e.kz*dt;e.kx*=kd;e.kz*=kd;if(Math.abs(e.kx)+Math.abs(e.kz)<.1)e.kx=e.kz=0}
@@ -1672,7 +1675,7 @@ function waterAI(e,dt){const f=G.flood,n=nearest(e);
  if(e.type==='eel'){if(e.hidden){if(n&&n.d<4.5){e.hidden=false;surface(e)}}else if(n&&n.d>9.5&&G.time-(e.riseAt||0)>2.5){e.hidden=true;burst(e.x,(f?f.h:0)+.1,e.z,0x9fffc0,8,2)}return false}
  if(e.hidden){e.wait=(e.wait||1.3)-dt;if(e.wait<=0){e.hidden=false;surface(e)}return true}
  return G.time-(e.riseAt||-9)<1}
-function waterSpawn(f,dt){if(f.h<.35)return;const deep=clamp((f.h-.35)/(1.3-.35),0,1),rate=(.3+2.4*Math.pow(deep,1.4))*(1+Math.max(0,G.level-22)*.03);
+function waterSpawn(f,dt){if(f.h<.35||G.deathCalm)return;const deep=clamp((f.h-.35)/(1.3-.35),0,1),rate=(.3+2.4*Math.pow(deep,1.4))*(1+Math.max(0,G.level-22)*.03);
  if(Math.random()>rate*dt)return;let wm=0;for(const e of G.enemies)if(!e.dead&&EDEF[e.type].water)wm++;if(wm>=18+deep*40||G.enemies.length>=G.cap)return;
  const alive=players.filter(p=>p.alive);if(!alive.length)return;const p=alive[Math.floor(Math.random()*alive.length)];
  for(let k=0;k<12;k++){const a=Math.random()*TAU,d=rf(5,13),x=p.x+Math.cos(a)*d,z=p.z+Math.sin(a)*d;if(blockedAt(x,z,.6))continue;
