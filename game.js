@@ -296,7 +296,7 @@ const POOLS={
 const D=new THREE.Object3D();D.rotation.order='YXZ';const TC=new THREE.Color();
 
 // ---------- sound
-const BUILD='20261125160649',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
+const BUILD='20261125162053',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
 let AC=null,musicOn=true,musicT=0,step=0,nb=null;const lastS={};
 function initAudio(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const b=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;nb=b}if(AC.state==='suspended')AC.resume()}catch(e){AC=null}}
 function tone(f,d,type,v,f2,at){if(!AC)return;const t=at||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
@@ -755,7 +755,7 @@ const fwd=p=>({x:-Math.sin(p.yaw),z:-Math.cos(p.yaw)});
 const XR={c:[],left:null,right:null,hud:null};
 function assistDir(p,dx,dz){let best=null,bd=.32;for(const e of G.enemies){if(e.dead||e.hidden)continue;const ex=e.x-p.x,ez=e.z-p.z,d=Math.hypot(ex,ez);if(d>20||d<.5)continue;const a=Math.acos(clamp((ex*dx+ez*dz)/d,-1,1));if(a<bd&&los(p.x,p.z,e.x,e.z)){bd=a;best=[ex/d,ez/d]}}return best}
 function aim(p){if(p.net){const y=p.aimYaw!==undefined?p.aimYaw:p.yaw;let dx=-Math.sin(y),dz=-Math.cos(y);if(p.assist){const a=assistDir(p,dx,dz);if(a){dx=a[0];dz=a[1]}}const w=p.hero==='wizard'?.38:0;return{dx,dz,ox:p.x+dx*.5-dz*w,oy:p.H.eye-(w?.55:.4),oz:p.z+dz*.5+dx*w}}
- if(p.i===0&&p.local&&renderer.xr.isPresenting&&vrHandAim(p)&&VRART.on&&XR.right){XR.right.getWorldQuaternion(_q);_v.set(0,0,-1).applyQuaternion(_q);_v.y=0;if(_v.lengthSq()>1e-4){_v.normalize();XR.right.getWorldPosition(_v2);return{dx:_v.x,dz:_v.z,ox:p.x+_v.x*.5,oy:clamp(_v2.y,.6,2),oz:p.z+_v.z*.5}}}
+ if(p.i===0&&p.local&&renderer.xr.isPresenting&&vrHandAim(p)&&VRART.on&&XR.right){vrAimVec(p,_v);_v.y=0;if(_v.lengthSq()>1e-4){_v.normalize();vrAimPos(p,_v2);return{dx:_v.x,dz:_v.z,ox:p.x+_v.x*.5,oy:clamp(_v2.y,.6,2),oz:p.z+_v.z*.5}}}
  if(p.local&&(p.ctrl==='touch'||(p.ctrl&&p.ctrl.startsWith('gp')))){const f=fwd(p),a=assistDir(p,f.x,f.z);if(a)return{dx:a[0],dz:a[1],ox:p.x+a[0]*.5,oy:p.H.eye-.4,oz:p.z+a[1]*.5}}
  if(p.i===0&&p.local&&renderer.xr.isPresenting&&XR.right&&!VRART.on){XR.right.getWorldQuaternion(_q);_v.set(0,0,-1).applyQuaternion(_q);_v.y=0;if(_v.lengthSq()>1e-4){_v.normalize();XR.right.getWorldPosition(_v2);return{dx:_v.x,dz:_v.z,ox:p.x+_v.x*.5,oy:clamp(_v2.y,.6,2),oz:p.z+_v.z*.5}}}
  const f=fwd(p);if(p.hero==='wizard')return{dx:f.x,dz:f.z,ox:p.x+f.x*.5-f.z*.38,oy:p.H.eye-.55,oz:p.z+f.z*.5+f.x*.38};return{dx:f.x,dz:f.z,ox:p.x+f.x*.5,oy:p.H.eye-.4,oz:p.z+f.z*.5}}
@@ -1101,7 +1101,7 @@ function clientUpdate(dt){const nr=NET.nr;let hp=null;
  if(nr&&performance.now()-NET.hostSeen>(NET.lastTick<0?35000:15000)&&!G.over){G.over=true;if(document.pointerLockElement)document.exitPointerLock();showTouch();showOver('Connection lost','The host’s game ended or this device lost the connection.')}
 
  if(nr&&(NET.sendT-=dt)<=0){NET.sendT=.05;const p=players[0];let ay=p.yaw,y=p.yaw;
-  if(renderer.xr.isPresenting){p.cam.getWorldDirection(_v);y=ay=Math.atan2(-_v.x,-_v.z);if(vrHandAim(p)&&VRART.on&&XR.right){XR.right.getWorldQuaternion(_q);_v.set(0,0,-1).applyQuaternion(_q);if(Math.hypot(_v.x,_v.z)>.01)ay=Math.atan2(-_v.x,-_v.z)}else if(XR.right&&!VRART.on){XR.right.getWorldQuaternion(_q);_v.set(0,0,-1).applyQuaternion(_q);if(Math.hypot(_v.x,_v.z)>.01)ay=Math.atan2(-_v.x,-_v.z)}}
+  if(renderer.xr.isPresenting){p.cam.getWorldDirection(_v);y=ay=Math.atan2(-_v.x,-_v.z);if(vrHandAim(p)&&VRART.on&&XR.right){vrAimVec(p,_v);if(Math.hypot(_v.x,_v.z)>.01)ay=Math.atan2(-_v.x,-_v.z)}else if(XR.right&&!VRART.on){XR.right.getWorldQuaternion(_q);_v.set(0,0,-1).applyQuaternion(_q);if(Math.hypot(_v.x,_v.z)>.01)ay=Math.atan2(-_v.x,-_v.z)}}
   try{const r=nr.presence({me:{id:NET.myId,h:p.hero,dv:DEV,s:G.seed,x:+p.x.toFixed(2),z:+p.z.toFixed(2),y:+y.toFixed(3),ay:+ay.toFixed(3),mv:p.moving>.5?1:0,f:p.alive&&p.netFire?1:0,fc:NET.cnt.fc|0,a1:NET.cnt.a1,a2:NET.cnt.a2,pt:NET.cnt.pt,ea:NET.cnt.ea,as:(p.ctrl==='touch'||p.ctrl.startsWith('gp'))?1:0}});if(r&&r.catch)r.catch(()=>{})}catch(e){}}
  if(!G.lg)return;
  for(const p of players){if(p.puppet){const k=Math.min(1,dt*12);p.x+=(p.tx-p.x)*k;p.z+=(p.tz-p.z)*k;syncPlayer(p,false,dt)}else updatePlayer(p,dt)}
@@ -1250,6 +1250,7 @@ function whSleeve(parent,name,D,right){const g=new THREE.PlaneGeometry(1,1);g.tr
 // 3D Wizard arms (from the user's Tripo models), loaded only when the Wizard is played in VR. Until they arrive the picture arms show.
 // 3D arms (from the user's Tripo models), loaded only when that hero is played in VR. Until they arrive the picture arms show.
 const HM={wizard:{state:0,f:['wiz_arm_r','wiz_arm_l']},valkyrie:{state:0,f:['valk_arm_r','valk_arm_l']},
+ elf:{state:0,f:['elf_arm_r','elf_arm_l'],tx:{r:{fist:'elf_fist',open:'elf_open'},l:{bow:'elf_bow'}}},
  barbarian:{state:0,f:['barb_arm_r','barb_arm_l'],tx:{r:{hand:'barb_axe1',axe:'barb_axe1',hand5:'barb_axe5',axe5:'barb_axe5',empty:'barb_open_r'},l:{hand:'barb_open_l'}}}};
 function wmPart(buf){const dv=new DataView(buf),jl=dv.getUint32(0,true),meta=JSON.parse(new TextDecoder().decode(new Uint8Array(buf,4,jl)));let o=4+jl;const al=n=>n+((4-n%4)%4),out={};
  for(const m of meta){const q=new Uint16Array(buf,o,m.nv*3);o+=al(m.nv*6);const uq=new Uint16Array(buf,o,m.nv*2);o+=al(m.nv*4);const idx=m.i32?new Uint32Array(buf,o,m.ni):new Uint16Array(buf,o,m.ni);o+=al(m.ni*(m.i32?4:2));
@@ -1263,7 +1264,34 @@ function hmLoad(hero){const M=HM[hero];if(!M||M.state)return;M.state=1;
  Promise.all(M.f.map(n=>fetch(V('fp/'+n+'.txt')).then(r=>{if(!r.ok)throw 0;return r.text()}).then(t=>{const b=atob(t.trim()),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u.buffer}))).then(([br,bl])=>{
   const tx=M.tx||{},tl=tx.l?null:tex(M.f[1]),tr=tx.r?null:tex(M.f[0]);M.r=grp(wmPart(br),tr,tl,tx.r);M.l=grp(wmPart(bl),tl,null,tx.l);
   if(M.f[0]==='valk_arm_r'){const tw=new THREE.Group();tw.scale.x=-1;tw.parts={};for(const k of ['hand','dagger','empty']){const src=M.r.parts[k];if(!src)continue;const x=new THREE.Mesh(src.geometry,src.material);x.frustumCulled=false;x.renderOrder=986;tw.add(x);tw.parts[k]=x}tw.visible=false;M.l.add(tw);M.l.twin=tw}M.state=2}).catch(()=>{M.state=3})}
-function vrHandAim(p){return p.hero==='wizard'||(p.hero==='valkyrie'||p.hero==='barbarian')&&HM[p.hero].state===2}
+function vrHandAim(p){return p.hero==='wizard'||(p.hero==='valkyrie'||p.hero==='barbarian'||p.hero==='elf'&&XR.left)&&HM[p.hero].state===2}
+// where a VR shot comes from: the right controller, or for the Elf the bow (nock to grip while drawn, else where the bow hand points)
+function vrAimVec(p,v){if(p.hero==='elf'&&XR.left){if(ELF.drawn)return v.copy(ELF.grip).sub(ELF.nock).normalize();XR.left.getWorldQuaternion(_q);return v.set(0,0,-1).applyQuaternion(_q)}XR.right.getWorldQuaternion(_q);return v.set(0,0,-1).applyQuaternion(_q)}
+function vrAimPos(p,v){return (p.hero==='elf'&&XR.left?XR.left:XR.right).getWorldPosition(v)}
+// Elf: bow in the left hand (its limbs bend as you draw), string from tip to tip, arrow nocked from the right fist; on release the open hand shows
+const ELF={drawn:false,nock:new THREE.Vector3(),grip:new THREE.Vector3()},EB={u:[-.119,.993,0],a:[-.03,-.004,1],tT:[-.011,.461,.118],tB:[.098,-.452,.118]},_nl=new THREE.Vector3(),_tg=new THREE.Vector3();
+function elfArrow(){const g=new THREE.Group(),wood=new THREE.MeshLambertMaterial({color:0x8a5a30}),head=new THREE.MeshLambertMaterial({color:0xb8c0c8,emissive:0x000000}),fl=new THREE.MeshLambertMaterial({color:0x3f7a3a,side:THREE.DoubleSide});
+ const sh=new THREE.Mesh(new THREE.CylinderGeometry(.0045,.0045,.7,6),wood);sh.rotation.x=PI/2;sh.position.z=.35;g.add(sh);
+ const hd=new THREE.Mesh(new THREE.ConeGeometry(.012,.05,6),head);hd.rotation.x=PI/2;hd.position.z=.72;g.add(hd);g.head=hd;
+ for(let k=0;k<3;k++){const pv=new THREE.Group();pv.rotation.z=k*TAU/3;const f=new THREE.Mesh(new THREE.PlaneGeometry(.08,.022),fl);f.rotation.y=PI/2;f.position.set(0,.012,.07);pv.add(f);g.add(pv)}
+ g.traverse(o=>{o.frustumCulled=false;o.renderOrder=986});return g}
+function elfModelTick(p){const M=HM.elf,a=p.anim;hmAttach(M);
+ if(!M.rest){const g=M.l.parts.bow.geometry;M.rest=g.attributes.position.array.slice();M.k=-1;
+  const sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(9),3));M.str=new THREE.Line(sg,new THREE.LineBasicMaterial({color:0xe8e2d0}));M.str.frustumCulled=false;M.l.add(M.str);
+  M.arrow=elfArrow();M.l.add(M.arrow)}
+ const rel=a>.12,u=EB.u,ar=EB.a;
+ _nl.set(0,.01,-.04);XR.right.localToWorld(_nl);ELF.nock.copy(_nl);M.l.worldToLocal(_nl);M.l.getWorldPosition(ELF.grip);
+ const d=_nl.x*ar[0]+_nl.y*ar[1]+_nl.z*ar[2],along=_nl.x*u[0]+_nl.y*u[1]+_nl.z*u[2];
+ const drawn=!rel&&d>.06&&_nl.length()<.9&&Math.abs(along)<.35,k=drawn?clamp((d-.06)/.45,0,1):0;ELF.drawn=drawn;
+ if(Math.abs(k-M.k)>.01){M.k=k;const g=M.l.parts.bow.geometry,P=g.attributes.position.array,R=M.rest,b=.09*k;
+  for(let i=0;i<P.length;i+=3){const s=(R[i]*u[0]+R[i+1]*u[1]+R[i+2]*u[2])/.46,w0=Math.max(0,Math.abs(s)-.1),w=w0*w0/.81*b;P[i]=R[i]+ar[0]*w;P[i+1]=R[i+1]+ar[1]*w;P[i+2]=R[i+2]+ar[2]*w}
+  g.attributes.position.needsUpdate=true}
+ const b=.09*k,S=M.str.geometry.attributes.position.array;
+ S[0]=EB.tT[0]+ar[0]*b;S[1]=EB.tT[1]+ar[1]*b;S[2]=EB.tT[2]+ar[2]*b;S[6]=EB.tB[0]+ar[0]*b;S[7]=EB.tB[1]+ar[1]*b;S[8]=EB.tB[2]+ar[2]*b;
+ if(drawn){S[3]=_nl.x;S[4]=_nl.y;S[5]=_nl.z}else{S[3]=(S[0]+S[6])/2;S[4]=(S[1]+S[7])/2;S[5]=(S[2]+S[8])/2}M.str.geometry.attributes.position.needsUpdate=true;
+ const A=M.arrow;A.visible=!rel;if(!rel){A.position.copy(_nl);if(drawn)A.lookAt(ELF.grip);else{XR.right.getWorldQuaternion(_q);_tg.set(0,0,-1).applyQuaternion(_q).add(ELF.nock);A.lookAt(_tg)}
+  const gl=p.tier>=3&&p.H.glow?p.H.glow[p.tier-1]:0;A.head.material.emissive.setHex(gl||0)}
+ M.r.parts.fist.visible=!rel;M.r.parts.open.visible=rel;M.r.position.set(0,0,0)}
 function hmHide(except){for(const k in HM){const M=HM[k];if(M.state===2&&k!==except)M.r.visible=M.l.visible=false}}
 function hmAttach(M){if(M.r.parent!==XR.right)XR.right.add(M.r);if(M.l.parent!==XR.left)XR.left.add(M.l);M.r.visible=M.l.visible=true}
 // Barbarian: plain axe in his right fist (skull axe at tier 5, glowing from tier 3); on the throw it's gone and his open hand shows; open gauntlet hand on the left
@@ -1294,6 +1322,7 @@ function wizHandsTick(p){p0=p;hmLoad('wizard');if(HM.wizard.state===2){wizModelT
  WH.staff.quaternion.setFromRotationMatrix(faceBasis(_wp,_f));if(p.anim2>0)WH.staff.rotateZ(Math.sin(p.anim2*PI)*.7);WH.staff.position.copy(_wp);WH.staff.visible=true;WH.sl.visible=true}
 function vrArtTick(p){if(!VRART.on||!p.alive||(G&&G.paused)){vrArtHide();wizHide();return}
  if(p.hero==='wizard'&&XR.left&&XR.right){vrArtHide();hmHide('wizard');wizHandsTick(p);return}
+ if(p.hero==='elf'&&XR.left&&XR.right){hmLoad('elf');if(HM.elf.state===2){vrArtHide();for(const k in WH)if(WH[k])WH[k].visible=false;hmHide('elf');elfModelTick(p);return}}
  if(p.hero==='barbarian'&&XR.left&&XR.right){hmLoad('barbarian');if(HM.barbarian.state===2){vrArtHide();for(const k in WH)if(WH[k])WH[k].visible=false;hmHide('barbarian');barbModelTick(p);return}}
  if(p.hero==='valkyrie'&&XR.left&&XR.right){hmLoad('valkyrie');if(HM.valkyrie.state===2){vrArtHide();for(const k in WH)if(WH[k])WH[k].visible=false;hmHide('valkyrie');valkModelTick(p);return}}
  wizHide();
