@@ -296,7 +296,7 @@ const POOLS={
 const D=new THREE.Object3D();D.rotation.order='YXZ';const TC=new THREE.Color();
 
 // ---------- sound
-const BUILD='20261126130914',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
+const BUILD='20261126135804',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
 let AC=null,musicOn=true,musicT=0,step=0,nb=null;const lastS={};
 function initAudio(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const b=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;nb=b}if(AC.state==='suspended')AC.resume()}catch(e){AC=null}}
 function tone(f,d,type,v,f2,at){if(!AC)return;const t=at||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
@@ -346,6 +346,10 @@ let G=null,players=[];
 const humans=()=>players.filter(p=>p.local);
 function newState(){return{level:1,treasure:false,time:0,enemies:[],proj:[],eproj:[],rocks:[],items:[],gens:[],chests:[],parts:[],fx:[],embers:[],sconces:[],flash:0,transT:0,paused:false,over:false,passCtr:0,nxt:new Int32Array(2400),flowT:0,bannerT:0,lightT:0,fxq:[],tick:0}}
 const SL=[];for(let k=0;k<4;k++){const l=new THREE.PointLight(0xff8a3a,0,15,2);scene.add(l);SL.push(l)}
+// lights that ride along with the newest heroes' shots once the angel has blessed the weapons
+const SHL=[];for(let k=0;k<3;k++){const l=new THREE.PointLight(0xffe2a8,0,14,2);scene.add(l);SHL.push(l)}
+function shotLights(){let k=0;if(G&&G.glowShots&&G.proj)for(let i=G.proj.length-1;i>=0&&k<SHL.length;i--){const b=G.proj[i];if(b.dead||!(b.owner||G.net==='client'))continue;const l=SHL[k++];l.position.set(b.x,b.y||1.2,b.z);l.color.setHex(b.glow||(b.kind==='bolt'?0x9fd8ff:0xffe2a8));l.intensity=2.4}
+ for(;k<SHL.length;k++)SHL[k].intensity=0}
 
 // ---------- level generation
 function genLevel(lv,tr){
@@ -754,7 +758,9 @@ function hitTile(k,dmg,p,x,z){const v=G.g[k];if(v===2){const hp=(G.doorHp.get(k)
 function breakAround(x,z,R,dmg,p){const i0=Math.floor((x-R)/T),i1=Math.floor((x+R)/T),j0=Math.floor((z-R)/T),j1=Math.floor((z+R)/T);for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){if(i<0||j<0||i>=G.W||j>=G.H)continue;const k=j*G.W+i,v=G.g[k];if((v===2||v===3)&&Math.hypot(i*T+T/2-x,j*T+T/2-z)<R+2)hitTile(k,dmg,p,i*T+T/2,j*T+T/2)}}
 
 // ---------- combat
-function hurtEnemy(e,dmg,p,kx,kz,stun){if(e.dead)return;const D0=EDEF[e.type];if(D0.death){sfx('clang');burst(e.x,1.5,e.z,0xc0c0c0,3,2);return}if(e.hidden)return;if(p&&p.buff==='might'&&p.buffT>0)dmg*=2;e.hp-=dmg;e.flash=.12;if(kx!==undefined){e.kx=kx;e.kz=kz}if(stun)e.stun=Math.max(e.stun,stun);sfx('hit');if(e.hp<=0)killEnemy(e,p)}
+function hurtEnemy(e,dmg,p,kx,kz,stun){if(e.dead)return;const D0=EDEF[e.type];if(D0.death){sfx('clang');burst(e.x,1.5,e.z,0xc0c0c0,3,2);return}if(e.hidden)return;
+ if(e.stone&&e.frz>0){burst(e.x,1.2,e.z,0x9a9a9a,14,5);killEnemy(e,p);return}
+ if(p&&p.stone&&Math.random()<.12*p.stone){e.frz=4;e.stone=1;burst(e.x,1.2,e.z,0xb0b0b0,8,3);return}if(p&&p.buff==='might'&&p.buffT>0)dmg*=2;e.hp-=dmg;e.flash=.12;if(kx!==undefined){e.kx=kx;e.kz=kz}if(stun)e.stun=Math.max(e.stun,stun);sfx('hit');if(e.hp<=0)killEnemy(e,p)}
 function killEnemy(e,p){if(e.dead)return;e.dead=true;const D0=EDEF[e.type];burst(e.x,1.2,e.z,D0.burst,12,5);sfx('kill');
  if(p){p.score+=D0.pts;p.kills++;gainPower(p,D0.death?20:1);if(D0.death)pmsg(p,'Death destroyed! +1000')}for(const w of players)if(w.hero==='wizard'&&w.alive)w.mana=Math.min(100,w.mana+(w===p?4:1));
  // killing Death silences the whole level: every monster on the map falls at once, and generators only wake again if you walk right up to them
@@ -873,7 +879,7 @@ function syncPlayer(p,vr,dt){p.dolly.position.set(p.x,0,p.z);p.dolly.rotation.y=
 function spawnFromGens(dt){if(G.transT>0)return;if(G.genFrz>0){G.genFrz-=dt;return}for(const g of G.gens){g.t-=dt;if(Math.random()<dt*4)G.parts.push({x:g.x+rf(-.4,.4),y:.7,z:g.z+rf(-.4,.4),vx:0,vy:rf(1,2.5),vz:0,life:rf(.5,1),c:EDEF[g.type].gen,g:true,ng:true});
  if(g.t>0)continue;g.t=g.rate*rf(.7,1.3);if(G.enemies.length>=G.cap)continue;const n=nearest(g);if(!n||n.d>(G.deathCalm?9:42))continue;const a=Math.random()*TAU;spawnEnemy(g.type,g.x+Math.cos(a)*1.5,g.z+Math.sin(a)*1.5)}}
 function updateEnemies(dt){const W=G.W,E=G.enemies,wiz=players.filter(p=>p.hero==='wizard'&&p.alive),kd=Math.pow(.02,dt);
- for(let k=0;k<E.length;k++){const e=E[k];if(e.dead)continue;if(e.frz>0){e.frz-=dt;continue}const D0=EDEF[e.type];e.atk-=dt;e.stun-=dt;e.flash-=dt;
+ for(let k=0;k<E.length;k++){const e=E[k];if(e.dead)continue;if(e.frz>0){e.frz-=dt;if(e.frz<=0)e.stone=0;continue}const D0=EDEF[e.type];e.atk-=dt;e.stun-=dt;e.flash-=dt;
   if(e.kx||e.kz){e.x+=e.kx*dt;e.z+=e.kz*dt;e.kx*=kd;e.kz*=kd;if(Math.abs(e.kx)+Math.abs(e.kz)<.1)e.kx=e.kz=0}
   if(D0.water&&waterAI(e,dt))continue;
   if(D0.blink){e.blink-=dt;if(e.blink<=0){e.hidden=!e.hidden;e.blink=e.hidden?rf(1,1.6):rf(1.8,2.8);burst(e.x,1.4,e.z,0xc070ff,8,2)}}
@@ -953,11 +959,12 @@ function flushAll(){for(const k in POOLS)POOLS[k].n=0;for(const k in GL)GL[k].n=
   if(e.hidden){if(Math.random()<.3)GL.spark.add(e.x+rf(-.4,.4),rf(.3,2),e.z+rf(-.4,.4),.5,.25,.7);continue}
   const fl=e.type==='ghost'||e.type==='death',y=fl?.12+Math.sin(t*3+e.ph)*.12:Math.abs(Math.sin(t*9+e.ph))*.08*e.moving;
   const rz=fl?Math.sin(t*2+e.ph)*.08:Math.sin(t*9+e.ph)*.09*e.moving,rx=.12*e.moving+(e.flash>0?-.25:0);
-  const MP=MPOOL[e.type];if(MP&&MP.ok){if(MP.n<MP.max){const i=MP.n++;D.position.set(e.x,D0.water?waterY(e,t):(MSPR[e.type].f?.15+Math.sin(t*2.6+e.ph)*.12:Math.abs(Math.sin(t*8+e.ph))*.05*e.moving),e.z);D.rotation.set(0,0,0);D.scale.set(1,1,1);D.updateMatrix();MP.m.setMatrixAt(i,D.matrix);MP.yaw.array[i]=e.rot;const fl=e.flash>0,fr=e.frz>0;MP.tint.array[i*3]=fr?.6:fl?1.3:.88;MP.tint.array[i*3+1]=fr?.88:fl?.45:.84;MP.tint.array[i*3+2]=fr?1.35:fl?.4:.82}continue}
-  put(e.type,e.x,y,e.z,e.rot,rx,rz,1,1,e.frz>0?0x9fd8ff:e.flash>0?0xff6050:0xffffff);
+  const MP=MPOOL[e.type];if(MP&&MP.ok){if(MP.n<MP.max){const i=MP.n++;D.position.set(e.x,D0.water?waterY(e,t):(MSPR[e.type].f?.15+Math.sin(t*2.6+e.ph)*.12:Math.abs(Math.sin(t*8+e.ph))*.05*e.moving),e.z);D.rotation.set(0,0,0);D.scale.set(1,1,1);D.updateMatrix();MP.m.setMatrixAt(i,D.matrix);MP.yaw.array[i]=e.rot;const fl=e.flash>0,fr=e.frz>0,st=fr&&e.stone;MP.tint.array[i*3]=st?.62:fr?.6:fl?1.3:.88;MP.tint.array[i*3+1]=st?.62:fr?.88:fl?.45:.84;MP.tint.array[i*3+2]=st?.62:fr?1.35:fl?.4:.82}continue}
+  put(e.type,e.x,y,e.z,e.rot,rx,rz,1,1,e.frz>0?(e.stone?0x8a8a8a:0x9fd8ff):e.flash>0?0xff6050:0xffffff);
   const s=Math.sin(e.rot),c=Math.cos(e.rot),ey=y+D0.ey,ez=D0.ez,ex=D0.ex,col=D0.eye,br=e.type==='ghost'?1.4:1.2;
   GL.eye.add(e.x+s*ez+c*ex,ey,e.z+c*ez-s*ex,col[0]*br,col[1]*br,col[2]*br);GL.eye.add(e.x+s*ez-c*ex,ey,e.z+c*ez+s*ex,col[0]*br,col[1]*br,col[2]*br);
   if(e.type==='sorcerer')GL.orb.add(e.x+c*.6+s*.3,y+2.2,e.z-s*.6+c*.3,.6,.3,.8)}
+ shotLights();
  for(const b of G.proj){if(b.dead)continue;const ry=Math.atan2(b.vx,b.vz);
   if(b.kind==='axe')put(b.tier>=5?'axe5':'axe',b.x,b.y,b.z,ry,b.spin,0,b.scale,1,b.tint);else if(b.kind==='knife'){const kk=b.tier>=5?'knife5':'knife',KP=MPOOL[kk];if(KP&&KP.ok&&KP.n<KP.max){const i=KP.n++;D.position.set(b.x,b.y-MSPR[kk].h/2,b.z);D.rotation.set(0,0,0);D.scale.set(1,1,1);D.updateMatrix();KP.m.setMatrixAt(i,D.matrix);KP.yaw.array[i]=0;KP.tint.array[i*3]=KP.tint.array[i*3+1]=KP.tint.array[i*3+2]=1}else put(kk,b.x,b.y,b.z,ry,b.spin*1.4,0,1.5,1,b.tint)}
   else if(b.kind==='arrow')put('arrow',b.x,b.y,b.z,ry,0,0,1,1,b.tint);else if(b.kind==='fire'){put('fire',b.x,b.y,b.z,0,0,0,1,1,0xff7020);GL.orb.add(b.x,b.y,b.z,1,.45,.1)}else if(b.kind==='rock')put('rock',b.x,b.y,b.z,b.spin,b.spin*.7,0,1,1,0xffffff);else{put('bolt',b.x,b.y,b.z,ry,0,0,b.scale,5,b.tint);const c=RGB(b.tint);GL.orb.add(b.x,b.y,b.z,c[0],c[1],c[2])}
@@ -1392,7 +1399,7 @@ function makePool(x,z){const grp=new THREE.Group();grp.position.set(x,0,z);
  sprTex('angel',t=>{angel.material.map=cloneStrip(t);angel.material.needsUpdate=true});
  const halo=new THREE.Mesh(new THREE.PlaneGeometry(3.2,3.6),new THREE.MeshBasicMaterial({map:haloTex(),transparent:true,opacity:.6,blending:THREE.AdditiveBlending,depthWrite:false}));halo.position.set(0,1.4,-.05);angel.add(halo);
  grp.add(rim,water,ring);G.lg.add(grp);G.lg.add(angel);
- G.pools.push({x,z,r:2.2,water,ring,angel,halo,greeted:new Set(),spoke:false,bub:null,bubT:0})}
+ G.pools.push({x,z,r:2.2,water,ring,angel,halo,greeted:new Set(),blessed:new Set(),spoke:false,bub:null,bubT:0})}
 function sayAngel(t){try{const u=new SpeechSynthesisUtterance(t);u.rate=.92;u.pitch=1.5;const f=speechSynthesis.getVoices().find(v=>/female|samantha|zira|victoria|karen|moira|tessa|fiona|aria|jenny/i.test(v.name));if(f)u.voice=f;speechSynthesis.cancel();speechSynthesis.speak(u);sayT=performance.now()}catch(e){}}
 function angelBubble(pl){if(!pl.bub){const c=document.createElement('canvas');c.width=1024;c.height=300;const x=c.getContext('2d');
   x.fillStyle='rgba(30,20,10,.92)';x.fillRect(0,0,1024,300);x.strokeStyle='#ffd98a';x.lineWidth=8;x.strokeRect(4,4,1016,292);
@@ -1401,7 +1408,15 @@ function angelBubble(pl){if(!pl.bub){const c=document.createElement('canvas');c.
   let line='',y=120;for(const w of ANGEL_LINE.split(' ')){if(x.measureText(line+w).width>700){x.fillText(line,290,y);line='';y+=44}line+=w+' '}x.fillText(line,290,y);
   const m=new THREE.Mesh(new THREE.PlaneGeometry(1.9,.56),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthTest:false,fog:false}));m.renderOrder=995;m.position.set(pl.x,4.4,pl.z);G.lg.add(m);pl.bub=m}
  pl.bub.visible=true;pl.bubT=10}
-function poolTick(dt){const t=G.time;
+// the angel's gifts, once per spring for each hero who steps in:
+//  - the weapon jumps up a power level
+//  - the first spring blesses every hero's weapon with light: thrown axes, knives, arrows and bolts light up the halls they fly through
+//  - the Wizard's magic refills by itself, faster with each spring; from his second spring his bolts can turn monsters to stone
+function angelBless(p){p.springs=(p.springs||0)+1;
+ if(G.net!=='client'&&p.tier<5)gainPower(p,Math.max(0,TIERP[p.tier]-p.power));
+ if(!G.glowShots){G.glowShots=true;banner('The angel blesses your weapons','Every shot now carries light into the dark',3);for(const q of humans())pmsg(q,'Your weapons now shine as they fly')}
+ if(p.hero==='wizard'){p.manaRegen=Math.min(6,(p.manaRegen||0)+2);let m='Your magic now refills by itself';if(p.springs>=2){p.stone=Math.min(3,(p.stone||0)+1);m+=' · Your bolts can turn monsters to stone'}if(p.el)pmsg(p,m)}}
+function poolTick(dt){const t=G.time;for(const p of players)if(p.manaRegen&&p.alive&&G.net!=='client')p.mana=Math.min(100,p.mana+p.manaRegen*dt);
  if(G.secret&&!G.secretOpen&&G.g[G.secret.k]===0){G.secretOpen=true;drawMapBase();sfx('up');for(const q of humans())pmsg(q,'A hidden spring!')}
  for(const p of players){if(p.blessT>0)p.blessT-=dt;if(p.sayT>0){p.sayT-=dt;if(p.sayT<=0&&p.el&&p.el.say)p.el.say.style.opacity=0}}
  if(!G.pools.length)return;
@@ -1413,7 +1428,7 @@ function poolTick(dt){const t=G.time;
   for(const p of players){if(!p.alive)continue;const d=Math.hypot(p.x-pl.x,p.z-pl.z),fast=p.hero==='barbarian'||p.hero==='valkyrie';
    if(d<pl.r){if(G.net!=='client'){p.hp=Math.min(p.max,p.hp+p.max*.7*dt);p.shield=Math.min(p.smax,p.shield+p.smax*.8*dt);p.mana=Math.min(100,p.mana+80*dt)}
     if(fast)p.blessT=60;if(Math.random()<dt*10)spark(p.x+rf(-.4,.4),rf(.4,1.8),p.z+rf(-.4,.4),0xbff4ff,.6);
-    if(!p.inPool){p.inPool=true;if(p.el){pmsg(p,'The healing waters restore you'+(fast?' · Swift blessing for 60 seconds':''));sfx('potion')}}}
+    if(!p.inPool){p.inPool=true;if(p.el){pmsg(p,'The healing waters restore you'+(fast?' · Swift blessing for 60 seconds':''));sfx('potion')}if(!pl.blessed.has(p.i)){pl.blessed.add(p.i);angelBless(p)}}}
    else if(p.inPool&&d>pl.r+.3)p.inPool=false;
    if(p.el&&d<11&&(G.secretOpen||!G.secret)&&!pl.greeted.has(p.i)){pl.greeted.add(p.i);if(p.el.say){p.el.say.querySelector('p').textContent=ANGEL_LINE;p.el.say.style.opacity=1;p.sayT=9}
     if(!pl.spoke){pl.spoke=true;G.angelTalk=performance.now()+9000;sayAngel(ANGEL_LINE)}if(renderer.xr.isPresenting&&p.i===0)angelBubble(pl)}}}}
