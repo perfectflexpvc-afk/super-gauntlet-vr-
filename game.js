@@ -296,7 +296,7 @@ const POOLS={
 const D=new THREE.Object3D();D.rotation.order='YXZ';const TC=new THREE.Color();
 
 // ---------- sound
-const BUILD='20261126135804',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
+const BUILD='20261126142119',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
 let AC=null,musicOn=true,musicT=0,step=0,nb=null;const lastS={};
 function initAudio(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const b=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;nb=b}if(AC.state==='suspended')AC.resume()}catch(e){AC=null}}
 function tone(f,d,type,v,f2,at){if(!AC)return;const t=at||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
@@ -766,7 +766,7 @@ function killEnemy(e,p){if(e.dead)return;e.dead=true;const D0=EDEF[e.type];burst
  // killing Death silences the whole level: every monster on the map falls at once, and generators only wake again if you walk right up to them
  if(D0.death&&p&&!G.deathCalm){G.deathCalm=true;for(const o of G.enemies)if(!o.dead){o.dead=true;burst(o.x,1.2,o.z,EDEF[o.type].burst,6,4)}G.flash=1;sfx('potion');
   banner('Death is destroyed!','Every monster falls. Stay clear of the generators and the way to the exit is quiet',3.5);for(const q of humans())rumble(q,500,1)}}
-function hurtGen(gn,d,p){if(gn.dead)return;gn.hp-=d;burst(gn.x,.8,gn.z,0xc8b8a0,4);if(gn.hp<=0){gn.dead=true;G.lg.remove(gn.mesh);burst(gn.x,.8,gn.z,0xe8e0c8,30,7);sfx('gen');if(p){p.score+=50;gainPower(p,3)}if(G.level===1&&!G.treasure&&!G.saidStrength){G.saidStrength=true;voice('strength')}G.gens=G.gens.filter(g=>!g.dead);drawMapBase()}}
+function hurtGen(gn,d,p){if(gn.dead)return;gn.hp-=d;burst(gn.x,.8,gn.z,0xc8b8a0,4);if(gn.hp<=0){gn.dead=true;G.lg.remove(gn.mesh);burst(gn.x,.8,gn.z,0xe8e0c8,30,7);sfx('gen');if(p){p.score+=50;gainPower(p,3)}G.gensKilled=(G.gensKilled||0)+1;if((G.level===1&&!G.saidStrength)||G.gensKilled%3===0){G.saidStrength=true;voice('strength')}/* level 1's first generator, then every third one */G.gens=G.gens.filter(g=>!g.dead);drawMapBase()}}
 function openChest(c,p){if(c.open)return;c.open=true;if(p&&p.local)rumble(p,70,.35);G.lg.remove(c.mesh);burst(c.x,.6,c.z,0xd0a040,16);G.chests=G.chests.filter(x=>!x.open);const r=Math.random();
  if(r<.06&&!G.treasure){for(let k=0;k<6;k++)spawnEnemy('ghost',c.x+rf(-2,2),c.z+rf(-2,2));if(p)pmsg(p,'A trap! Ghosts burst out');sfx('hurt');return}
  const t=r<.45?'treasure':r<.68?'food':r<.78?'potion':r<.9?'charm':'key';addItem(t,c.x,c.z);if(r<.3)addItem('treasure',c.x+rf(-.5,.5),c.z+rf(-.5,.5));sfx('gold')}
