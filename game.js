@@ -296,7 +296,7 @@ const POOLS={
 const D=new THREE.Object3D();D.rotation.order='YXZ';const TC=new THREE.Color();
 
 // ---------- sound
-const BUILD='20261126105832',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
+const BUILD='20261126113100',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
 let AC=null,musicOn=true,musicT=0,step=0,nb=null;const lastS={};
 function initAudio(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const b=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;nb=b}if(AC.state==='suspended')AC.resume()}catch(e){AC=null}}
 function tone(f,d,type,v,f2,at){if(!AC)return;const t=at||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
@@ -323,7 +323,7 @@ function voPreload(){if(!AC||VO._p)return;VO._p=1;for(const n of VON)fetch(V('mu
 function voice(n,duck,tries){if(!tries&&window.__vlog)window.__vlog.push(n+(duck?'(duck)':''));if(!AC||G&&G.demo)return;voPreload();const b=VO[n];if(!b){if((tries||0)<12)setTimeout(()=>voice(n,duck,(tries||0)+1),250);return}
  try{const s=AC.createBufferSource(),g=AC.createGain();g.gain.value=1;s.buffer=b;s.connect(g);g.connect(AC.destination);s.start();if(duck)duckUntil=performance.now()+b.duration*1000+300}catch(e){}}let BGMR=null;const _ad=new THREE.Vector3();
 function bgmRoute(){if(BGMR!==null||!AC)return;try{const s=AC.createMediaElementSource(BGM),g=AC.createGain(),pan=AC.createStereoPanner?AC.createStereoPanner():null;if(pan){s.connect(pan);pan.connect(g)}else s.connect(g);g.connect(AC.destination);g.gain.value=.2;BGM.volume=1;BGMR={g,pan}}catch(e){BGMR=false}}
-function musicMix(){let vol=.2*(performance.now()<duckUntil?.3:1),pan=0;const pl=G&&G.pools&&G.pools[0];
+function musicMix(){let vol=.2,pan=0;const pl=G&&G.pools&&G.pools[0];
  if(pl){let best=null,bd=1e9;for(const p of players)if(p.local&&p.alive){const d=Math.hypot(p.x-pl.x,p.z-pl.z);if(d<bd){bd=d;best=p}}
   if(best){const k=clamp(1-(bd-3)/50,0,1);vol=.025+.45*k*k;try{best.cam.getWorldDirection(_ad);const fx=_ad.x,fz=_ad.z,fl=Math.hypot(fx,fz)||1,ux=(pl.x-best.x)/(bd||1),uz=(pl.z-best.z)/(bd||1);pan=bd>2.5?clamp((ux*(-fz/fl)+uz*(fx/fl))*.85,-.85,.85):0}catch(e){}}else vol=.025}
  bgmRoute();if(BGMR){const g=BGMR.g.gain;g.value+=(vol-g.value)*.06;if(BGMR.pan){const pp=BGMR.pan.pan;pp.value+=(pan-pp.value)*.1}}else BGM.volume=clamp(BGM.volume+(vol-BGM.volume)*.06,0,1)}
@@ -754,7 +754,7 @@ function breakAround(x,z,R,dmg,p){const i0=Math.floor((x-R)/T),i1=Math.floor((x+
 function hurtEnemy(e,dmg,p,kx,kz,stun){if(e.dead)return;const D0=EDEF[e.type];if(D0.death){sfx('clang');burst(e.x,1.5,e.z,0xc0c0c0,3,2);return}if(e.hidden)return;if(p&&p.buff==='might'&&p.buffT>0)dmg*=2;e.hp-=dmg;e.flash=.12;if(kx!==undefined){e.kx=kx;e.kz=kz}if(stun)e.stun=Math.max(e.stun,stun);sfx('hit');if(e.hp<=0)killEnemy(e,p)}
 function killEnemy(e,p){if(e.dead)return;e.dead=true;const D0=EDEF[e.type];burst(e.x,1.2,e.z,D0.burst,12,5);sfx('kill');
  if(p){p.score+=D0.pts;p.kills++;gainPower(p,D0.death?20:1);if(D0.death)pmsg(p,'Death destroyed! +1000')}for(const w of players)if(w.hero==='wizard'&&w.alive)w.mana=Math.min(100,w.mana+(w===p?4:1))}
-function hurtGen(gn,d,p){if(gn.dead)return;gn.hp-=d;burst(gn.x,.8,gn.z,0xc8b8a0,4);if(gn.hp<=0){gn.dead=true;G.lg.remove(gn.mesh);burst(gn.x,.8,gn.z,0xe8e0c8,30,7);sfx('gen');if(p){p.score+=50;gainPower(p,3)}if(G.level===1&&!G.treasure&&!G.saidStrength){G.saidStrength=true;voice('strength',true)}G.gens=G.gens.filter(g=>!g.dead);drawMapBase()}}
+function hurtGen(gn,d,p){if(gn.dead)return;gn.hp-=d;burst(gn.x,.8,gn.z,0xc8b8a0,4);if(gn.hp<=0){gn.dead=true;G.lg.remove(gn.mesh);burst(gn.x,.8,gn.z,0xe8e0c8,30,7);sfx('gen');if(p){p.score+=50;gainPower(p,3)}if(G.level===1&&!G.treasure&&!G.saidStrength){G.saidStrength=true;voice('strength')}G.gens=G.gens.filter(g=>!g.dead);drawMapBase()}}
 function openChest(c,p){if(c.open)return;c.open=true;if(p&&p.local)rumble(p,70,.35);G.lg.remove(c.mesh);burst(c.x,.6,c.z,0xd0a040,16);G.chests=G.chests.filter(x=>!x.open);const r=Math.random();
  if(r<.06&&!G.treasure){for(let k=0;k<6;k++)spawnEnemy('ghost',c.x+rf(-2,2),c.z+rf(-2,2));if(p)pmsg(p,'A trap! Ghosts burst out');sfx('hurt');return}
  const t=r<.45?'treasure':r<.68?'food':r<.78?'potion':r<.9?'charm':'key';addItem(t,c.x,c.z);if(r<.3)addItem('treasure',c.x+rf(-.5,.5),c.z+rf(-.5,.5));sfx('gold')}
