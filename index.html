@@ -490,7 +490,7 @@ const POOLS={
 const D=new THREE.Object3D();D.rotation.order='YXZ';const TC=new THREE.Color();
 
 // ---------- sound
-const BUILD='20261125163424',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
+const BUILD='20261125163853',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
 let AC=null,musicOn=true,musicT=0,step=0,nb=null;const lastS={};
 function initAudio(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const b=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;nb=b}if(AC.state==='suspended')AC.resume()}catch(e){AC=null}}
 function tone(f,d,type,v,f2,at){if(!AC)return;const t=at||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
@@ -1173,14 +1173,27 @@ function hudTick(dt){if(!G||G.demo||!players.length||!G.lg)return;fpTick();const
 function banner(t,s,d){$('#bT').textContent=t;$('#bS').textContent=s||'';$('#banner').classList.add('show');G.bannerT=d||2}
 
 // ---------- VR
-function drawVRHud(){const p=players[0],c=XR.hudC,x=c.getContext('2d');x.fillStyle='rgba(10,6,4,.85)';x.fillRect(0,0,512,256);x.fillStyle=p.H.css;x.font='bold 40px serif';x.fillText(p.H.name+' · Level '+G.level,16,50);const rc=roomCode();if(rc){x.textAlign='right';x.fillStyle='#ffc35a';x.font='bold 34px sans-serif';x.fillText('Room '+rc,496,48);x.textAlign='left'}
- x.fillStyle='#600';x.fillRect(16,72,480,34);x.fillStyle='#e94a3a';x.fillRect(16,72,480*clamp(p.hp/p.max,0,1),34);x.fillStyle='#fff';x.font='28px sans-serif';x.fillText(Math.ceil(p.hp)+' / '+p.max+' health'+(p.smax?'  shield '+Math.ceil(p.shield):''),24,99);
- x.fillText(`Keys ${p.keys}  Potions ${p.potions}  Food ${p.pouch}  Gold ${p.score}`,16,150);const H=p.H;x.fillText(H.sec==='shield'?'Shield '+Math.ceil(p.shield):H.sec==='mana'?'Magic '+Math.floor(p.mana):H.a1+(p.cd1>0?' '+p.cd1.toFixed(1)+'s':' ready'),16,195);if(G.treasure)x.fillText('Time '+Math.ceil(G.timer)+'s',16,238);XR.hud.material.map.needsUpdate=true}
+// VR HUD: locked to your view, up in the corners and see-through, so it follows your head without sitting on your wrist or over the action.
+// Upper left: health, shield/magic, keys, potions, food. Upper right: the mini map.
+function drawVRHud(){const p=players[0],c=XR.hudC,x=c.getContext('2d'),H=p.H;x.clearRect(0,0,512,256);
+ x.fillStyle='rgba(10,6,4,.55)';x.beginPath();x.roundRect?x.roundRect(0,0,512,256,22):x.rect(0,0,512,256);x.fill();
+ x.fillStyle=H.css;x.font='bold 34px serif';x.fillText(H.name+' · Level '+G.level,18,44);const rc=roomCode();if(rc){x.textAlign='right';x.fillStyle='#ffc35a';x.font='bold 28px sans-serif';x.fillText('Room '+rc,496,42);x.textAlign='left'}
+ const bar=(y,f,bg,fg,t)=>{x.fillStyle=bg;x.fillRect(18,y,476,30);x.fillStyle=fg;x.fillRect(18,y,476*clamp(f,0,1),30);x.fillStyle='#fff';x.font='bold 22px sans-serif';x.fillText(t,28,y+23)};
+ bar(60,p.hp/p.max,'#4a0806','#e94a3a',Math.ceil(p.hp)+' / '+p.max+' health');
+ let f,t;if(H.sec==='shield'){f=p.shield/(p.smax||1);t='Shield '+Math.ceil(p.shield)}else if(H.sec==='mana'){f=p.mana/100;t='Magic '+Math.floor(p.mana)}else{f=p.smax?p.shield/p.smax:(p.cd1>0?1-p.cd1/(H.cd1||5):1);t=p.smax?'Shield '+Math.ceil(p.shield):H.a1+(p.cd1>0?' '+p.cd1.toFixed(1)+'s':' ready')}
+ bar(98,f,'#0b2238',H.sec==='mana'?'#6a8cff':'#4fb6e8',t);
+ x.font='bold 30px sans-serif';const items=[['🗝',p.keys,'#ffd060'],['🧪',p.potions,'#ff7ad0'],['🍖',p.pouch,'#ffb070']];let ix=18;
+ for(const [ic,n,col] of items){x.fillStyle=col;x.fillText(ic+' '+n,ix,170);ix+=120}x.fillStyle='#ffd34a';x.fillText('💰 '+p.score.toLocaleString(),ix,170);
+ x.font='22px sans-serif';x.fillStyle='#e8dcc8';x.fillText(H.tiers[p.tier-1]+' ('+p.tier+'/5)'+(G.treasure?'   Time '+Math.ceil(G.timer)+'s':''),18,212);
+ XR.hud.material.map.needsUpdate=true;
+ if(XR.map){const m=XR.mapC,y=m.getContext('2d');drawMini(m,p);y.globalCompositeOperation='destination-over';y.fillStyle='rgba(10,6,4,.6)';y.fillRect(0,0,m.width,m.height);y.globalCompositeOperation='source-over';XR.map.material.map.needsUpdate=true}}
 function roomCode(){return NET.code&&NET.nr?NET.code.slice(1).toUpperCase():''}
-for(let i=0;i<2;i++){const c=renderer.xr.getController(i);c.addEventListener('connected',e=>{c.userData.hand=e.data.handedness;if(e.data.handedness==='right')XR.right=c;if(e.data.handedness==='left'){XR.left=c;if(XR.hud&&XR.hud.parent!==c)c.add(XR.hud)}});c.addEventListener('disconnected',()=>{if(XR.right===c)XR.right=null;if(XR.left===c)XR.left=null});XR.c.push(c)}
+for(let i=0;i<2;i++){const c=renderer.xr.getController(i);c.addEventListener('connected',e=>{c.userData.hand=e.data.handedness;if(e.data.handedness==='right')XR.right=c;if(e.data.handedness==='left')XR.left=c});c.addEventListener('disconnected',()=>{if(XR.right===c)XR.right=null;if(XR.left===c)XR.left=null});XR.c.push(c)}
 function onVRStart(){const p=players[0];if(!p)return;showTouch();for(const c of XR.c)p.dolly.add(c);for(const q of players)setLayer(q.body.root,0);p.body.root.visible=false;applyQuality();
- XR.hudC=document.createElement('canvas');XR.hudC.width=512;XR.hudC.height=256;XR.hud=new THREE.Mesh(new THREE.PlaneGeometry(.22,.11),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(XR.hudC),transparent:true}));XR.hud.position.set(0,.07,.02);XR.hud.rotation.x=-.9;if(XR.left)XR.left.add(XR.hud);$('#hud').hidden=true}
-function onVREnd(){vrMenuClose();vrArtHide();wizHide();const p=players[0];$('#hud').hidden=false;if(XR.hud&&XR.hud.parent)XR.hud.parent.remove(XR.hud);XR.hud=null;if(!p)return;p.cam.add(p.vm.root);p.vm.root.position.set(0,0,0);setLayer(p.vm.root,20);players.forEach(q=>setLayer(q.body.root,10+q.i));p.body.root.visible=p.alive;applyQuality();showTouch();if(running())setPause(true)}
+ const hp=(w,h,cv)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv),transparent:true,opacity:.9,depthTest:false,depthWrite:false,fog:false}));m.renderOrder=999;m.frustumCulled=false;p.cam.add(m);return m};
+ XR.hudC=document.createElement('canvas');XR.hudC.width=512;XR.hudC.height=256;XR.hud=hp(.34,.17,XR.hudC);XR.hud.position.set(-.37,.25,-.9);XR.hud.rotation.set(-.22,.38,0);
+ XR.mapC=document.createElement('canvas');XR.mapC.width=XR.mapC.height=256;XR.map=hp(.21,.21,XR.mapC);XR.map.position.set(.4,.26,-.9);XR.map.rotation.set(-.22,-.4,0);$('#hud').hidden=true}
+function onVREnd(){vrMenuClose();vrArtHide();wizHide();const p=players[0];$('#hud').hidden=false;for(const k of ['hud','map'])if(XR[k]){if(XR[k].parent)XR[k].parent.remove(XR[k]);XR[k]=null};if(!p)return;p.cam.add(p.vm.root);p.vm.root.position.set(0,0,0);setLayer(p.vm.root,20);players.forEach(q=>setLayer(q.body.root,10+q.i));p.body.root.visible=p.alive;applyQuality();showTouch();if(running())setPause(true)}
 async function enterVR(){if(!navigator.xr){menuMsg('This browser has no VR support. Open the page in your headset’s browser.');return}
  try{const s=await navigator.xr.requestSession('immersive-vr',{optionalFeatures:['local-floor','bounded-floor']});if(!G||G.demo)startGame(true);renderer.xr.setReferenceSpaceType('local-floor');await renderer.xr.setSession(s);onVRStart();watchXR(s)}
  catch(err){menuMsg('VR could not start here. Open this page directly in your headset’s browser, then press Enter VR.')}}
