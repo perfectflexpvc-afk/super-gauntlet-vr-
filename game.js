@@ -296,7 +296,7 @@ const POOLS={
 const D=new THREE.Object3D();D.rotation.order='YXZ';const TC=new THREE.Color();
 
 // ---------- sound
-const BUILD='20261125144010',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
+const BUILD='20261125160649',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
 let AC=null,musicOn=true,musicT=0,step=0,nb=null;const lastS={};
 function initAudio(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const b=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;nb=b}if(AC.state==='suspended')AC.resume()}catch(e){AC=null}}
 function tone(f,d,type,v,f2,at){if(!AC)return;const t=at||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
@@ -1249,22 +1249,29 @@ function whSleeve(parent,name,D,right){const g=new THREE.PlaneGeometry(1,1);g.tr
  m.rotation.z=right?Math.atan2(D.dir[1],D.dir[0]):Math.atan2(-D.dir[1],-D.dir[0]);parent.add(m);return m}
 // 3D Wizard arms (from the user's Tripo models), loaded only when the Wizard is played in VR. Until they arrive the picture arms show.
 // 3D arms (from the user's Tripo models), loaded only when that hero is played in VR. Until they arrive the picture arms show.
-const HM={wizard:{state:0,f:['wiz_arm_r','wiz_arm_l']},valkyrie:{state:0,f:['valk_arm_r','valk_arm_l']}};
+const HM={wizard:{state:0,f:['wiz_arm_r','wiz_arm_l']},valkyrie:{state:0,f:['valk_arm_r','valk_arm_l']},
+ barbarian:{state:0,f:['barb_arm_r','barb_arm_l'],tx:{r:{hand:'barb_axe1',axe:'barb_axe1',hand5:'barb_axe5',axe5:'barb_axe5',empty:'barb_open_r'},l:{hand:'barb_open_l'}}}};
 function wmPart(buf){const dv=new DataView(buf),jl=dv.getUint32(0,true),meta=JSON.parse(new TextDecoder().decode(new Uint8Array(buf,4,jl)));let o=4+jl;const al=n=>n+((4-n%4)%4),out={};
  for(const m of meta){const q=new Uint16Array(buf,o,m.nv*3);o+=al(m.nv*6);const uq=new Uint16Array(buf,o,m.nv*2);o+=al(m.nv*4);const idx=m.i32?new Uint32Array(buf,o,m.ni):new Uint16Array(buf,o,m.ni);o+=al(m.ni*(m.i32?4:2));
   const pos=new Float32Array(m.nv*3),uv=new Float32Array(m.nv*2);for(let i=0;i<m.nv;i++){for(let k=0;k<3;k++)pos[i*3+k]=m.mn[k]+q[i*3+k]/65535*(m.mx[k]-m.mn[k]);uv[i*2]=uq[i*2]/65535;uv[i*2+1]=uq[i*2+1]/65535}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('uv',new THREE.BufferAttribute(uv,2));g.setIndex(new THREE.BufferAttribute(idx,1));g.computeVertexNormals();out[m.name]=g}
  return out}
 function hmLoad(hero){const M=HM[hero];if(!M||M.state)return;M.state=1;
- const tex=n=>{const t=texLoader.load('fp/'+n+'.jpg');t.encoding=THREE.sRGBEncoding;return t};
+ const TC={},tex=n=>{if(TC[n])return TC[n];const t=texLoader.load('fp/'+n+'.jpg');t.encoding=THREE.sRGBEncoding;return TC[n]=t};
  const mat=t=>new THREE.MeshLambertMaterial({map:t,emissive:0xffffff,emissiveMap:t,emissiveIntensity:.4,side:THREE.DoubleSide});
- const grp=(parts,t,t2)=>{const g=new THREE.Group();g.parts={};const m=mat(t);for(const k in parts){const x=new THREE.Mesh(parts[k],k==='disk'?new THREE.MeshBasicMaterial({map:t,side:THREE.DoubleSide}):k==='dagger'?mat(t):k==='empty'?mat(t2):m);x.frustumCulled=false;x.renderOrder=986;g.add(x);g.parts[k]=x}g.visible=false;return g};
+ const MC={},grp=(parts,t,t2,tx)=>{const g=new THREE.Group();g.parts={};const m=mat(t);for(const k in parts){const own=tx&&tx[k];const x=new THREE.Mesh(parts[k],k==='disk'?new THREE.MeshBasicMaterial({map:t,side:THREE.DoubleSide}):/^(dagger|axe)/.test(k)?mat(own?tex(own):t):own?(MC[own]||(MC[own]=mat(tex(own)))):k==='empty'?mat(t2):m);x.frustumCulled=false;x.renderOrder=986;g.add(x);g.parts[k]=x}g.visible=false;return g};
  Promise.all(M.f.map(n=>fetch(V('fp/'+n+'.txt')).then(r=>{if(!r.ok)throw 0;return r.text()}).then(t=>{const b=atob(t.trim()),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u.buffer}))).then(([br,bl])=>{
-  const tl=tex(M.f[1]);M.r=grp(wmPart(br),tex(M.f[0]),tl);M.l=grp(wmPart(bl),tl);
+  const tx=M.tx||{},tl=tx.l?null:tex(M.f[1]),tr=tx.r?null:tex(M.f[0]);M.r=grp(wmPart(br),tr,tl,tx.r);M.l=grp(wmPart(bl),tl,null,tx.l);
   if(M.f[0]==='valk_arm_r'){const tw=new THREE.Group();tw.scale.x=-1;tw.parts={};for(const k of ['hand','dagger','empty']){const src=M.r.parts[k];if(!src)continue;const x=new THREE.Mesh(src.geometry,src.material);x.frustumCulled=false;x.renderOrder=986;tw.add(x);tw.parts[k]=x}tw.visible=false;M.l.add(tw);M.l.twin=tw}M.state=2}).catch(()=>{M.state=3})}
-function vrHandAim(p){return p.hero==='wizard'||p.hero==='valkyrie'&&HM.valkyrie.state===2}
+function vrHandAim(p){return p.hero==='wizard'||(p.hero==='valkyrie'||p.hero==='barbarian')&&HM[p.hero].state===2}
 function hmHide(except){for(const k in HM){const M=HM[k];if(M.state===2&&k!==except)M.r.visible=M.l.visible=false}}
 function hmAttach(M){if(M.r.parent!==XR.right)XR.right.add(M.r);if(M.l.parent!==XR.left)XR.left.add(M.l);M.r.visible=M.l.visible=true}
+// Barbarian: plain axe in his right fist (skull axe at tier 5, glowing from tier 3); on the throw it's gone and his open hand shows; open gauntlet hand on the left
+function barbModelTick(p){const M=HM.barbarian,a=p.anim,t=p.tier;hmAttach(M);
+ const snap=a>.55?Math.sin((1-a)/.45*PI):0;M.r.position.set(0,snap*.04,-snap*.14);M.r.rotation.x=-snap*.7;
+ const out=a>.12&&a<.7,five=t>=5,P=M.r.parts;P.hand.visible=P.axe.visible=!out&&!five;P.hand5.visible=P.axe5.visible=!out&&five;P.empty.visible=out;
+ const ax=five?P.axe5:P.axe;ax.material.emissive.setHex(t>=3?(p.H.glow&&p.H.glow[t-1])||0xff8040:0xffffff);ax.material.emissiveIntensity=t>=3?.75:.4;
+ M.l.position.set(0,Math.sin(p.bob||0)*.006,0)}
 function wizModelTick(p){const M=HM.wizard,firing=p.anim>.05;hmAttach(M);
  M.r.position.set(0,0,firing?-.03*p.anim:0);M.r.parts.disk.material.color.setScalar(1+(firing?p.anim*.8:0));
  M.l.rotation.x=p.anim2>0?-Math.sin(Math.min(1,p.anim2)*PI)*.7:0;
@@ -1287,6 +1294,7 @@ function wizHandsTick(p){p0=p;hmLoad('wizard');if(HM.wizard.state===2){wizModelT
  WH.staff.quaternion.setFromRotationMatrix(faceBasis(_wp,_f));if(p.anim2>0)WH.staff.rotateZ(Math.sin(p.anim2*PI)*.7);WH.staff.position.copy(_wp);WH.staff.visible=true;WH.sl.visible=true}
 function vrArtTick(p){if(!VRART.on||!p.alive||(G&&G.paused)){vrArtHide();wizHide();return}
  if(p.hero==='wizard'&&XR.left&&XR.right){vrArtHide();hmHide('wizard');wizHandsTick(p);return}
+ if(p.hero==='barbarian'&&XR.left&&XR.right){hmLoad('barbarian');if(HM.barbarian.state===2){vrArtHide();for(const k in WH)if(WH[k])WH[k].visible=false;hmHide('barbarian');barbModelTick(p);return}}
  if(p.hero==='valkyrie'&&XR.left&&XR.right){hmLoad('valkyrie');if(HM.valkyrie.state===2){vrArtHide();for(const k in WH)if(WH[k])WH[k].visible=false;hmHide('valkyrie');valkModelTick(p);return}}
  wizHide();
  let P=VRART.planes[p.hero];const wiz=p.hero==='wizard',L=FPL[p.hero];
