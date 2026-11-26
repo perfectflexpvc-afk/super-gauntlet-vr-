@@ -296,7 +296,7 @@ const POOLS={
 const D=new THREE.Object3D();D.rotation.order='YXZ';const TC=new THREE.Color();
 
 // ---------- sound
-const BUILD='20261125164321',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
+const BUILD='20261125164550',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
 let AC=null,musicOn=true,musicT=0,step=0,nb=null;const lastS={};
 function initAudio(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const b=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;nb=b}if(AC.state==='suspended')AC.resume()}catch(e){AC=null}}
 function tone(f,d,type,v,f2,at){if(!AC)return;const t=at||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
@@ -1304,7 +1304,7 @@ function elfModelTick(p){const M=HM.elf,a=p.anim;hmAttach(M);
  if(drawn){S[3]=_nl.x;S[4]=_nl.y;S[5]=_nl.z}else{S[3]=(S[0]+S[6])/2;S[4]=(S[1]+S[7])/2;S[5]=(S[2]+S[8])/2}M.str.geometry.attributes.position.needsUpdate=true;
  const A=M.arrow;A.visible=!rel;if(!rel){A.position.copy(_nl);if(drawn)A.lookAt(ELF.grip);else{XR.right.getWorldQuaternion(_q);_tg.set(0,0,-1).applyQuaternion(_q).add(ELF.nock);A.lookAt(_tg)}
   const gl=p.tier>=3&&p.H.glow?p.H.glow[p.tier-1]:0;A.head.material.emissive.setHex(gl||0)}
- M.r.parts.fist.visible=!rel;M.r.parts.open.visible=rel;M.r.position.set(0,0,0);M.r.rotation.z=-PI/4}// right hand turned 45° (clockwise as you look along your arm) to sit like your hand on the controller
+ M.r.parts.fist.visible=!rel;M.r.parts.open.visible=rel;M.r.position.set(0,0,0);M.r.rotation.z=0}
 function hmHide(except){for(const k in HM){const M=HM[k];if(M.state===2&&k!==except)M.r.visible=M.l.visible=false}}
 function hmAttach(M){if(M.r.parent!==XR.right)XR.right.add(M.r);if(M.l.parent!==XR.left)XR.left.add(M.l);M.r.visible=M.l.visible=true}
 // Barbarian: plain axe in his right fist (skull axe at tier 5, glowing from tier 3); on the throw it's gone and his open hand shows; open gauntlet hand on the left
