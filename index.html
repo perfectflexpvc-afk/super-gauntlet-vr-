@@ -490,7 +490,7 @@ const POOLS={
 const D=new THREE.Object3D();D.rotation.order='YXZ';const TC=new THREE.Color();
 
 // ---------- sound
-const BUILD='20261126113842',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
+const BUILD='20261126130005',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
 let AC=null,musicOn=true,musicT=0,step=0,nb=null;const lastS={};
 function initAudio(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const b=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;nb=b}if(AC.state==='suspended')AC.resume()}catch(e){AC=null}}
 function tone(f,d,type,v,f2,at){if(!AC)return;const t=at||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
@@ -519,7 +519,9 @@ function voice(n,duck,tries){if(!tries&&window.__vlog)window.__vlog.push(n+(duck
 function bgmRoute(){if(BGMR!==null||!AC)return;try{const s=AC.createMediaElementSource(BGM),g=AC.createGain(),pan=AC.createStereoPanner?AC.createStereoPanner():null;if(pan){s.connect(pan);pan.connect(g)}else s.connect(g);g.connect(AC.destination);g.gain.value=.2;BGM.volume=1;BGMR={g,pan}}catch(e){BGMR=false}}
 function musicMix(){let vol=.2,pan=0;const pl=G&&G.pools&&G.pools[0];
  if(pl){let best=null,bd=1e9;for(const p of players)if(p.local&&p.alive){const d=Math.hypot(p.x-pl.x,p.z-pl.z);if(d<bd){bd=d;best=p}}
-  if(best){const k=clamp(1-(bd-3)/50,0,1);vol=.025+.45*k*k;try{best.cam.getWorldDirection(_ad);const fx=_ad.x,fz=_ad.z,fl=Math.hypot(fx,fz)||1,ux=(pl.x-best.x)/(bd||1),uz=(pl.z-best.z)/(bd||1);pan=bd>2.5?clamp((ux*(-fz/fl)+uz*(fx/fl))*.85,-.85,.85):0}catch(e){}}else vol=.025}
+  if(best){const k=clamp(1-(bd-4)/40,0,1);vol=.2*(1-.65*k*k);const now=performance.now();
+   // she speaks: the music all but stops, then her song starts again from the top
+   if(G.angelTalk){if(now<G.angelTalk)vol=.008;else{G.angelTalk=0;try{BGM.currentTime=0}catch(e){}const g=BGMR&&BGMR.g;if(g)g.gain.value=vol}}try{best.cam.getWorldDirection(_ad);const fx=_ad.x,fz=_ad.z,fl=Math.hypot(fx,fz)||1,ux=(pl.x-best.x)/(bd||1),uz=(pl.z-best.z)/(bd||1);pan=bd>2.5?clamp((ux*(-fz/fl)+uz*(fx/fl))*.85,-.85,.85):0}catch(e){}}else vol=.2}
  bgmRoute();if(BGMR){const g=BGMR.g.gain;g.value+=(vol-g.value)*.06;if(BGMR.pan){const pp=BGMR.pan.pan;pp.value+=(pan-pp.value)*.1}}else BGM.volume=clamp(BGM.volume+(vol-BGM.volume)*.06,0,1)}
 // the menu's looping "ahh": starts after the warning screen, gapless, fades out when the dungeon music begins
 let BOOTDONE=!document.getElementById('boot');const MENU={buf:null,src:null,g:null,loading:false};
@@ -622,12 +624,13 @@ function buildLevel(){
  RNG=Math.random;const off=[[-1,-1],[1,-1],[-1,1],[1,1]];
  if(G.net!=='client')players.forEach((p,i)=>{const o=off[p.i%4];p.x=sx+o[0]*1.4;p.z=sz+o[1]*1.4;p.yaw=0;p.pitch=0;p.tgold=0;p.spawn={x:p.x,z:p.z}});
  if(L.secret)makePool(L.secret.cx*T+T/2,L.secret.cy*T+T/2);
+ for(const q of players)if(q.uw){q.uw.material.opacity=0;q.uw.visible=false}
  if(!tr&&(lv===7||lv>=22&&(lv-15)%7===0))makeFlood(lv===7);
  for(const p of players)applyGrowth(p,G.level===1&&!G.treasure&&!p.grown);for(const p of players)p.grown=true;
  G.cap=tr?0:Math.min(130+lv*30,380);G.dmgScale=1+(lv-1)*.1;G.spd=1+Math.min(lv,12)*.03;
  G.embers=[];drawMapBase();assignLights();
- if(!G.demo){if(tr){banner('Treasure Room','Grab the gold and reach the exit in 35 seconds',3);say('Treasure room! Grab the gold!',true)}
-  else{banner('Level '+lv,lv===1?'Find the green portal of the exit':lv===6?'Beware: Death walks these halls':'The horde grows stronger',2.5);if(G.time>2)say(lv===6?'Level 6. Beware of Death.':'Level '+lv,true)}}
+ if(!G.demo){if(tr){banner('Treasure Room','Grab the gold and reach the exit in 1:46',3)}
+  else{banner('Level '+lv,lv===1?'Find the green portal of the exit':lv===25?'Beware: Death walks these halls':'The horde grows stronger',2.5);if(G.time>2)say(lv===25?'Level 25. Beware of Death.':'Level '+lv,true)}}
 }
 function addItem(type,x,z){const m=new THREE.Mesh(ITEMGEO[type],IMAT[type]);m.position.set(x,0,z);m.castShadow=true;G.lg.add(m);G.items.push({type,x,z,mesh:m,ph:Math.random()*6})}
 function addChest(x,z){const m=new THREE.Mesh(ITEMGEO.chest,IMAT.chest);m.position.set(x,0,z);m.rotation.y=rnd(4)*PI/2;m.castShadow=m.receiveShadow=true;G.lg.add(m);G.chests.push({id:G.chestId++,x,z,mesh:m})}
@@ -959,10 +962,12 @@ const fwd=p=>({x:-Math.sin(p.yaw),z:-Math.cos(p.yaw)});
 const XR={c:[],left:null,right:null,hud:null};
 function assistDir(p,dx,dz){let best=null,bd=.32;for(const e of G.enemies){if(e.dead||e.hidden)continue;const ex=e.x-p.x,ez=e.z-p.z,d=Math.hypot(ex,ez);if(d>20||d<.5)continue;const a=Math.acos(clamp((ex*dx+ez*dz)/d,-1,1));if(a<bd&&los(p.x,p.z,e.x,e.z)){bd=a;best=[ex/d,ez/d]}}return best}
 function aim(p){if(p.net){const y=p.aimYaw!==undefined?p.aimYaw:p.yaw;let dx=-Math.sin(y),dz=-Math.cos(y);if(p.assist){const a=assistDir(p,dx,dz);if(a){dx=a[0];dz=a[1]}}const w=p.hero==='wizard'?.38:0;return{dx,dz,ox:p.x+dx*.5-dz*w,oy:p.H.eye-(w?.55:.4),oz:p.z+dz*.5+dx*w}}
- if(p.i===0&&p.local&&renderer.xr.isPresenting&&vrHandAim(p)&&VRART.on&&XR.right){vrAimVec(p,_v);_v.y=0;if(_v.lengthSq()>1e-4){_v.normalize();vrAimPos(p,_v2);return{dx:_v.x,dz:_v.z,ox:p.x+_v.x*.5,oy:clamp(_v2.y,.6,2),oz:p.z+_v.z*.5}}}
+ if(p.i===0&&p.local&&renderer.xr.isPresenting&&vrHandAim(p)&&VRART.on&&XR.right){vrAimVec(p,_v);_v.y=0;if(_v.lengthSq()>1e-4){_v.normalize();vrAimPos(p,_v2);return handShot(p)}}
  if(p.local&&(p.ctrl==='touch'||(p.ctrl&&p.ctrl.startsWith('gp')))){const f=fwd(p),a=assistDir(p,f.x,f.z);if(a)return{dx:a[0],dz:a[1],ox:p.x+a[0]*.5,oy:p.H.eye-.4,oz:p.z+a[1]*.5}}
- if(p.i===0&&p.local&&renderer.xr.isPresenting&&XR.right&&!VRART.on){XR.right.getWorldQuaternion(_q);_v.set(0,0,-1).applyQuaternion(_q);_v.y=0;if(_v.lengthSq()>1e-4){_v.normalize();XR.right.getWorldPosition(_v2);return{dx:_v.x,dz:_v.z,ox:p.x+_v.x*.5,oy:clamp(_v2.y,.6,2),oz:p.z+_v.z*.5}}}
+ if(p.i===0&&p.local&&renderer.xr.isPresenting&&XR.right&&!VRART.on){XR.right.getWorldQuaternion(_q);_v.set(0,0,-1).applyQuaternion(_q);_v.y=0;if(_v.lengthSq()>1e-4){_v.normalize();XR.right.getWorldPosition(_v2);return handShot(p)}}
  const f=fwd(p);if(p.hero==='wizard')return{dx:f.x,dz:f.z,ox:p.x+f.x*.5-f.z*.38,oy:p.H.eye-.55,oz:p.z+f.z*.5+f.x*.38};return{dx:f.x,dz:f.z,ox:p.x+f.x*.5,oy:p.H.eye-.4,oz:p.z+f.z*.5}}
+// VR: shots leave from your hand itself (unless the hand is poking into a wall)
+function handShot(p){let ox=_v2.x+_v.x*.12,oz=_v2.z+_v.z*.12;if(blockedAt(ox,oz,.15)){ox=p.x+_v.x*.5;oz=p.z+_v.z*.5}return{dx:_v.x,dz:_v.z,ox,oy:clamp(_v2.y,.6,2),oz}}
 function shoot(p,kind,ang,o){const a=aim(p),c=Math.cos(ang),s=Math.sin(ang),dx=a.dx*c-a.dz*s,dz2=a.dx*s+a.dz*c;G.proj.push(Object.assign({kind,x:a.ox,y:a.oy,z:a.oz,vx:dx*o.speed,vz:dz2*o.speed,owner:p,hit:null,spin:Math.random()*6,tint:p.H.tint[p.tier-1],glow:p.H.glow[p.tier-1],tier:p.tier},o))}
 function fire(p){const t=p.tier,haste=p.buff==='haste'&&p.buffT>0?.62:1;
  if(p.hero==='barbarian'){const o={speed:17+t*2,dmg:7+t*3,pierce:t,life:1.6+t*.15,r:.75+t*.08,knock:9,stun:.7,scale:1+t*.1};shoot(p,'axe',0,o);if(t>=5){shoot(p,'axe',.12,Object.assign({},o));shoot(p,'axe',-.12,Object.assign({},o))}p.cool=p.H.rate*haste;sfx('axe')}
@@ -1602,22 +1607,42 @@ function poolTick(dt){const t=G.time;
     if(!p.inPool){p.inPool=true;if(p.el){pmsg(p,'The healing waters restore you'+(fast?' · Swift blessing for 60 seconds':''));sfx('potion')}}}
    else if(p.inPool&&d>pl.r+.3)p.inPool=false;
    if(p.el&&d<11&&(G.secretOpen||!G.secret)&&!pl.greeted.has(p.i)){pl.greeted.add(p.i);if(p.el.say){p.el.say.querySelector('p').textContent=ANGEL_LINE;p.el.say.style.opacity=1;p.sayT=9}
-    if(!pl.spoke){pl.spoke=true;sayAngel(ANGEL_LINE)}if(renderer.xr.isPresenting&&p.i===0)angelBubble(pl)}}}}
+    if(!pl.spoke){pl.spoke=true;G.angelTalk=performance.now()+9000;sayAngel(ANGEL_LINE)}if(renderer.xr.isPresenting&&p.i===0)angelBubble(pl)}}}}
 
 // ---------- flood levels (an easy one at 7, then 22, 29, 36 ...): the water rises; past the knees heroes slow down and snake trolls swim faster
 function makeFlood(easy){const w=G.W*T,h=G.H*T,c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');x.fillStyle='#1d5866';x.fillRect(0,0,256,256);
  for(let i=0;i<140;i++){x.strokeStyle=`rgba(170,230,240,${.05+Math.random()*.12})`;x.lineWidth=1+Math.random()*2;x.beginPath();const a=Math.random()*256,b=Math.random()*256,r=6+Math.random()*26;x.arc(a,b,r,Math.random()*3,Math.random()*3+2);x.stroke()}
  const tex=new THREE.CanvasTexture(c);tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.repeat&&tex.repeat.set(G.W/2,G.H/2);
  const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({map:tex,color:0x7fc4d0,emissive:0x0b3440,roughness:.15,metalness:.2,transparent:true,opacity:.62,depthWrite:false}));
- m.rotation.x=-PI/2;m.position.set(w/2,.02,h/2);m.renderOrder=2;G.lg.add(m);G.flood=easy?{h:.02,mesh:m,tex,said:0,max:.95,rate:.95/200,quota:{eel:2,drowned:1}}:{h:.02,mesh:m,tex,said:0,max:1.3,rate:1.3/170};
+ m.rotation.x=-PI/2;m.position.set(w/2,.02,h/2);m.renderOrder=2;G.lg.add(m);G.flood=easy?{h:.02,mesh:m,tex,said:0,max:2.6,rate:1.3/260,quota:{eel:2,drowned:1}}:{h:.02,mesh:m,tex,said:0,max:2.6,rate:1.3/170};makeFalls(easy?3:5);
  if(!G.demo){banner('The dungeon is flooding!','Find the keys and the exit before the water rises',3.5);say('The dungeon is flooding! Find the exit!',true)}}
+// water pours in through openings high on the walls and splashes where it hits the surface
+function makeFalls(n){const f=G.flood,W=G.W,g=G.g,c=document.createElement('canvas');c.width=64;c.height=256;const x=c.getContext('2d');x.clearRect(0,0,64,256);
+ for(let i=0;i<46;i++){const a=Math.random()*64,w=2+Math.random()*7;const gr=x.createLinearGradient(0,0,0,256);gr.addColorStop(0,'rgba(220,245,255,.0)');gr.addColorStop(.5,`rgba(200,238,250,${.35+Math.random()*.4})`);gr.addColorStop(1,'rgba(220,245,255,.0)');x.fillStyle=gr;x.fillRect(a,Math.random()*128,w,128+Math.random()*128)}
+ const tex=new THREE.CanvasTexture(c);tex.wrapS=tex.wrapT=THREE.RepeatWrapping;f.falls=[];f.fallTex=tex;
+ const spots=[];for(let j=1;j<G.H-1;j++)for(let i=1;i<W-1;i++){if(g[j*W+i]!==1)continue;for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]])if(g[(j+dz)*W+i+dx]===0&&g[(j+dz*2)*W+i+dx*2]===0)spots.push([i,j,dx,dz])}
+ const sx=G.start?G.start.x:0,sz=G.start?G.start.z:0;
+ for(let k=0;k<n&&spots.length;k++){let best=null,bs=-1;for(let t=0;t<40;t++){const c=spots[rnd(spots.length)],px=c[0]*T+T/2,pz=c[1]*T+T/2;let sc=Math.hypot(px-sx,pz-sz)>10?1:0;for(const o of f.falls)sc+=Math.min(1,Math.hypot(o.x-px,o.z-pz)/30);if(sc>bs){bs=sc;best=c}}
+  const [i,j,dx,dz]=best,wx=i*T+T/2+dx*(T/2+.03),wz=j*T+T/2+dz*(T/2+.03),ry=Math.atan2(dx,dz),top=WALLH*.74;
+  const hole=new THREE.Mesh(new THREE.CircleGeometry(.62,20),new THREE.MeshBasicMaterial({color:0x0b0806}));hole.position.set(wx,top+.25,wz);hole.rotation.y=ry;G.lg.add(hole);
+  const lip=new THREE.Mesh(new THREE.TorusGeometry(.66,.09,6,20),new THREE.MeshStandardMaterial({color:0x4a4038,roughness:.9}));lip.position.copy(hole.position);lip.rotation.y=ry;G.lg.add(lip);
+  const geo=new THREE.PlaneGeometry(1.05,1);geo.translate(0,-.5,0);const sh=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({map:tex,color:0xcdeefa,transparent:true,opacity:.85,depthWrite:false,side:THREE.DoubleSide,fog:true}));
+  sh.position.set(wx+dx*.32,top+.35,wz+dz*.32);sh.rotation.y=ry;sh.rotation.x=0;G.lg.add(sh);f.falls.push({x:wx+dx*.55,z:wz+dz*.55,top:top+.35,sh,t:0})}}
+function fallsTick(f,dt){if(!f.falls)return;const frz=f.frz>0;if(f.fallTex.offset&&!frz)f.fallTex.offset.y=(f.fallTex.offset.y+dt*1.6)%1;
+ for(const w of f.falls){const len=Math.max(.05,w.top-f.h);w.sh.scale.y=len;w.sh.material.opacity=frz?.5:.85;w.sh.material.color.setHex(frz?0xffffff:0xcdeefa);
+  if(!frz&&(w.t-=dt)<=0){w.t=.07;burst(w.x+rf(-.3,.3),f.h+.05,w.z+rf(-.3,.3),0xd8f4ff,4,2.6);if(Math.random()<.5)spark(w.x+rf(-.6,.6),f.h+.02,w.z+rf(-.6,.6),0xffffff,.5)}}}
+// under the water: blue haze over your eyes and you start drowning
+function drownTick(f,dt){for(const p of players){if(!p.alive)continue;let eye=p.H.eye;if(p.local&&p.cam){p.cam.getWorldPosition(_v);eye=_v.y}const under=f.h>eye-.04;
+  if(p.local&&p.cam){if(!p.uw){p.uw=new THREE.Mesh(new THREE.PlaneGeometry(3,3),new THREE.MeshBasicMaterial({color:0x14586a,transparent:true,opacity:0,depthTest:false,depthWrite:false,fog:false}));p.uw.renderOrder=997;p.uw.position.set(0,0,-.3);p.uw.frustumCulled=false;p.cam.add(p.uw)}
+   p.uw.material.opacity+=((under?.55:0)-p.uw.material.opacity)*.15;p.uw.visible=p.uw.material.opacity>.02}
+  if(under&&G.net!=='client'&&G.transT<=0){hurtPlayer(p,p.max*.07*dt/G.dmgScale);if(!p.drownSaid){p.drownSaid=1;pmsg(p,'You’re underwater! You’re drowning!');rumble(p,300,.7)}}else p.drownSaid=0}}
 function floodSlow(){const f=G&&G.flood;return f?1-clamp((f.h-.45)/.8,0,1)*.45:1}
 function floodTick(dt){const f=G.flood;if(!f)return;if(f.frz>0){f.frz-=dt;if(f.frz<=0)for(const q of humans())pmsg(q,'The water moves again!')}else if(G.net!=='client'&&G.transT<=0)f.h=Math.min(f.max,f.h+f.rate*dt);
  if(f.mesh.material.color)f.mesh.material.color.setHex(f.frz>0?0xdaf6ff:0x7fc4d0);
  f.mesh.position.y=f.h;if(f.tex.offset){f.tex.offset.x=(G.time*.015)%1;f.tex.offset.y=(G.time*.01)%1}
- const marks=[[.45,'The water is at your knees'],[.85,'The water is at your waist. You’re slowing down'],[1.2,'The water is at your chest! Hurry!']];
+ const marks=[[.45,'The water is at your knees'],[.85,'The water is at your waist. You’re slowing down'],[1.2,'The water is at your chest! Hurry!'],[1.6,'The water is over your head! Get to the exit!']];
  if(f.said<marks.length&&f.h>=marks[f.said][0]){for(const q of humans()){pmsg(q,marks[f.said][1]);rumble(q,180,.4)}if(f.said>=1)voice('run-go');else say(marks[f.said][1],true);f.said++}
- if(G.net!=='client'&&G.transT<=0&&!(f.frz>0))waterSpawn(f,dt);
+ if(G.net!=='client'&&G.transT<=0&&!(f.frz>0))waterSpawn(f,dt);fallsTick(f,dt);drownTick(f,dt);
  if(f.h>.3&&Math.random()<dt*3)for(const q of players)if(q.alive&&q.moving>.5)spark(q.x+rf(-.5,.5),f.h+.05,q.z+rf(-.5,.5),0xbfeaff,.4)}
 
 // ---------- VR comfort: turning style and a darkened edge while moving
@@ -1647,7 +1672,7 @@ function waterAI(e,dt){const f=G.flood,n=nearest(e);
  if(e.type==='eel'){if(e.hidden){if(n&&n.d<4.5){e.hidden=false;surface(e)}}else if(n&&n.d>9.5&&G.time-(e.riseAt||0)>2.5){e.hidden=true;burst(e.x,(f?f.h:0)+.1,e.z,0x9fffc0,8,2)}return false}
  if(e.hidden){e.wait=(e.wait||1.3)-dt;if(e.wait<=0){e.hidden=false;surface(e)}return true}
  return G.time-(e.riseAt||-9)<1}
-function waterSpawn(f,dt){if(f.h<.35)return;const deep=clamp((f.h-.35)/(f.max-.35),0,1),rate=(.3+2.4*Math.pow(deep,1.4))*(1+Math.max(0,G.level-22)*.03);
+function waterSpawn(f,dt){if(f.h<.35)return;const deep=clamp((f.h-.35)/(1.3-.35),0,1),rate=(.3+2.4*Math.pow(deep,1.4))*(1+Math.max(0,G.level-22)*.03);
  if(Math.random()>rate*dt)return;let wm=0;for(const e of G.enemies)if(!e.dead&&EDEF[e.type].water)wm++;if(wm>=18+deep*40||G.enemies.length>=G.cap)return;
  const alive=players.filter(p=>p.alive);if(!alive.length)return;const p=alive[Math.floor(Math.random()*alive.length)];
  for(let k=0;k<12;k++){const a=Math.random()*TAU,d=rf(5,13),x=p.x+Math.cos(a)*d,z=p.z+Math.sin(a)*d;if(blockedAt(x,z,.6))continue;
