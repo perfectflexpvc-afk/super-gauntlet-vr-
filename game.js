@@ -296,7 +296,7 @@ const POOLS={
 const D=new THREE.Object3D();D.rotation.order='YXZ';const TC=new THREE.Color();
 
 // ---------- sound
-const BUILD='20261126113321',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
+const BUILD='20261126113842',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
 let AC=null,musicOn=true,musicT=0,step=0,nb=null;const lastS={};
 function initAudio(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const b=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;nb=b}if(AC.state==='suspended')AC.resume()}catch(e){AC=null}}
 function tone(f,d,type,v,f2,at){if(!AC)return;const t=at||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
@@ -321,7 +321,7 @@ const ROT=['music/dungeon-master-1.mp3','music/dungeon-love.mp3','music/dung-eat
 const VO={},VON=['treasure','run-go','strength'];let duckUntil=0;
 function voPreload(){if(!AC||VO._p)return;VO._p=1;for(const n of VON)fetch(V('music/vo-'+n+'.mp3')).then(r=>r.arrayBuffer()).then(b=>new Promise((ok,no)=>{const q=AC.decodeAudioData(b,ok,no);if(q&&q.then)q.then(ok,no)})).then(buf=>{VO[n]=buf}).catch(()=>{})}
 function voice(n,duck,tries){if(!tries&&window.__vlog)window.__vlog.push(n+(duck?'(duck)':''));if(!AC||G&&G.demo)return;voPreload();const b=VO[n];if(!b){if((tries||0)<12)setTimeout(()=>voice(n,duck,(tries||0)+1),250);return}
- try{const s=AC.createBufferSource(),g=AC.createGain();g.gain.value=1;s.buffer=b;s.connect(g);g.connect(AC.destination);s.start();if(duck)duckUntil=performance.now()+b.duration*1000+300}catch(e){}}let BGMR=null;const _ad=new THREE.Vector3();
+ try{const s=AC.createBufferSource(),g=AC.createGain();g.gain.value=n==='strength'?.15:1;s.buffer=b;s.connect(g);g.connect(AC.destination);s.start();if(duck)duckUntil=performance.now()+b.duration*1000+300}catch(e){}}let BGMR=null;const _ad=new THREE.Vector3();
 function bgmRoute(){if(BGMR!==null||!AC)return;try{const s=AC.createMediaElementSource(BGM),g=AC.createGain(),pan=AC.createStereoPanner?AC.createStereoPanner():null;if(pan){s.connect(pan);pan.connect(g)}else s.connect(g);g.connect(AC.destination);g.gain.value=.2;BGM.volume=1;BGMR={g,pan}}catch(e){BGMR=false}}
 function musicMix(){let vol=.2,pan=0;const pl=G&&G.pools&&G.pools[0];
  if(pl){let best=null,bd=1e9;for(const p of players)if(p.local&&p.alive){const d=Math.hypot(p.x-pl.x,p.z-pl.z);if(d<bd){bd=d;best=p}}
