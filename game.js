@@ -296,7 +296,7 @@ const POOLS={
 const D=new THREE.Object3D();D.rotation.order='YXZ';const TC=new THREE.Color();
 
 // ---------- sound
-const BUILD='20261125164550',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
+const BUILD='20261125173751',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
 let AC=null,musicOn=true,musicT=0,step=0,nb=null;const lastS={};
 function initAudio(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const b=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;nb=b}if(AC.state==='suspended')AC.resume()}catch(e){AC=null}}
 function tone(f,d,type,v,f2,at){if(!AC)return;const t=at||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
@@ -429,9 +429,11 @@ function buildLevel(){
 }
 function addItem(type,x,z){const m=new THREE.Mesh(ITEMGEO[type],IMAT[type]);m.position.set(x,0,z);m.castShadow=true;G.lg.add(m);G.items.push({type,x,z,mesh:m,ph:Math.random()*6})}
 function addChest(x,z){const m=new THREE.Mesh(ITEMGEO.chest,IMAT.chest);m.position.set(x,0,z);m.rotation.y=rnd(4)*PI/2;m.castShadow=m.receiveShadow=true;G.lg.add(m);G.chests.push({id:G.chestId++,x,z,mesh:m})}
+// monster toughness by level: gentler now that weapon upgrades come slower (+12% a level to 15, then +6% a level)
+function enemyHpMul(L){return L<=15?1+(L-1)*.12:2.68+(L-15)*.06}
 function addGen(type,x,z){const m=new THREE.Mesh(GENGEO,genMat);m.position.set(x,0,z);m.castShadow=m.receiveShadow=true;G.lg.add(m);const lvl=1+rnd(3),hp=type==='death'?8:lvl*4+G.level*.5;G.gens.push({id:G.genId++,type,x,z,mesh:m,hp,max:hp,t:rf(.5,2),rate:type==='death'?7:Math.max(.55,2.0-G.level*.1-lvl*.2),c:RGB(EDEF[type].gen)})}
 function spawnEnemy(type,x,z){if(G.enemies.length>=400)return;if(type==='death'&&G.enemies.filter(e=>e.type==='death').length>=2)return;const D0=EDEF[type];G.passCtr++;
- G.enemies.push({type,x,z,hp:D0.hp*(1+(G.level-1)*.3),atk:0,stun:0,flash:0,kx:0,kz:0,rot:Math.random()*TAU,ph:Math.random()*6,fire:rf(1.5,3),pass:G.passCtr%15===0,moving:0,blink:rf(1,3),hidden:false,drained:0})}
+ G.enemies.push({type,x,z,hp:D0.hp*enemyHpMul(G.level),atk:0,stun:0,flash:0,kx:0,kz:0,rot:Math.random()*TAU,ph:Math.random()*6,fire:rf(1.5,3),pass:G.passCtr%15===0,moving:0,blink:rf(1,3),hidden:false,drained:0})}
 function assignLights(){const N=quality==='high'?4:2;if(!G.sconces||!G.sconces.length){SL.forEach(l=>l.intensity=0);return}
  const ref=humans().filter(p=>p.alive);if(!ref.length&&G.start)ref.push(G.start);
  const s=G.sconces.map(c=>({c,d:Math.min(...ref.map(p=>(p.x-c.x)**2+(p.z-c.z)**2))})).sort((a,b)=>a.d-b.d);
