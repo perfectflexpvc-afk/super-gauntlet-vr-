@@ -296,7 +296,7 @@ const POOLS={
 const D=new THREE.Object3D();D.rotation.order='YXZ';const TC=new THREE.Color();
 
 // ---------- sound
-const BUILD='20261125173751',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
+const BUILD='20261125174347',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
 let AC=null,musicOn=true,musicT=0,step=0,nb=null;const lastS={};
 function initAudio(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const b=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;nb=b}if(AC.state==='suspended')AC.resume()}catch(e){AC=null}}
 function tone(f,d,type,v,f2,at){if(!AC)return;const t=at||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
@@ -1273,8 +1273,9 @@ function wmPart(buf){const dv=new DataView(buf),jl=dv.getUint32(0,true),meta=JSO
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('uv',new THREE.BufferAttribute(uv,2));g.setIndex(new THREE.BufferAttribute(idx,1));g.computeVertexNormals();out[m.name]=g}
  return out}
 function hmLoad(hero){const M=HM[hero];if(!M||M.state)return;M.state=1;
- const TC={},tex=n=>{if(TC[n])return TC[n];const t=texLoader.load('fp/'+n+'.jpg');t.encoding=THREE.sRGBEncoding;return TC[n]=t};
- const mat=t=>new THREE.MeshLambertMaterial({map:t,emissive:0xffffff,emissiveMap:t,emissiveIntensity:.4,side:THREE.DoubleSide});
+ const TC={},tex=(n,lin)=>{if(TC[n])return TC[n];const t=texLoader.load('fp/'+n+'.jpg');if(!lin)t.encoding=THREE.sRGBEncoding;t.nm=n;return TC[n]=t};
+ // Phong so Tripo's bumpy-detail (normal) maps show: leather grain, knuckles, engraving
+ const mat=t=>new THREE.MeshPhongMaterial({map:t,normalMap:t&&t.nm?tex(t.nm+'_n',1):null,emissive:0xffffff,emissiveMap:t,emissiveIntensity:.4,shininess:14,specular:0x262220,side:THREE.DoubleSide});
  const MC={},grp=(parts,t,t2,tx)=>{const g=new THREE.Group();g.parts={};const m=mat(t);for(const k in parts){const own=tx&&tx[k];const x=new THREE.Mesh(parts[k],k==='disk'?new THREE.MeshBasicMaterial({map:t,side:THREE.DoubleSide}):/^(dagger|axe)/.test(k)?mat(own?tex(own):t):own?(MC[own]||(MC[own]=mat(tex(own)))):k==='empty'?mat(t2):m);x.frustumCulled=false;x.renderOrder=986;g.add(x);g.parts[k]=x}g.visible=false;return g};
  Promise.all(M.f.map(n=>fetch(V('fp/'+n+'.txt')).then(r=>{if(!r.ok)throw 0;return r.text()}).then(t=>{const b=atob(t.trim()),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u.buffer}))).then(([br,bl])=>{
   const tx=M.tx||{},tl=tx.l?null:tex(M.f[1]),tr=tx.r?null:tex(M.f[0]);M.r=grp(wmPart(br),tr,tl,tx.r);M.l=grp(wmPart(bl),tl,null,tx.l);
@@ -1284,7 +1285,7 @@ function vrHandAim(p){return p.hero==='wizard'||(p.hero==='valkyrie'||p.hero==='
 function vrAimVec(p,v){if(p.hero==='elf'&&XR.left){if(ELF.drawn)return v.copy(ELF.grip).sub(ELF.nock).normalize();XR.left.getWorldQuaternion(_q);return v.set(0,0,-1).applyQuaternion(_q)}XR.right.getWorldQuaternion(_q);return v.set(0,0,-1).applyQuaternion(_q)}
 function vrAimPos(p,v){return (p.hero==='elf'&&XR.left?XR.left:XR.right).getWorldPosition(v)}
 // Elf: bow in the left hand (its limbs bend as you draw), string from tip to tip, arrow nocked from the right fist; on release the open hand shows
-const ELF={drawn:false,nock:new THREE.Vector3(),grip:new THREE.Vector3()},EB={u:[-.119,.993,0],a:[-.03,-.004,1],tT:[-.011,.461,.118],tB:[.098,-.452,.118]},_nl=new THREE.Vector3(),_tg=new THREE.Vector3();
+const ELF={drawn:false,nock:new THREE.Vector3(),grip:new THREE.Vector3()},EB={u:[-.119,.993,0],a:[-.03,-.004,1],tT:[-.014,.463,.118],tB:[.096,-.452,.118]},_nl=new THREE.Vector3(),_tg=new THREE.Vector3();
 function elfArrow(){const g=new THREE.Group(),wood=new THREE.MeshLambertMaterial({color:0x8a5a30}),head=new THREE.MeshLambertMaterial({color:0xb8c0c8,emissive:0x000000}),fl=new THREE.MeshLambertMaterial({color:0x3f7a3a,side:THREE.DoubleSide});
  const sh=new THREE.Mesh(new THREE.CylinderGeometry(.0045,.0045,.7,6),wood);sh.rotation.x=PI/2;sh.position.z=.35;g.add(sh);
  const hd=new THREE.Mesh(new THREE.ConeGeometry(.012,.05,6),head);hd.rotation.x=PI/2;hd.position.z=.72;g.add(hd);g.head=hd;
