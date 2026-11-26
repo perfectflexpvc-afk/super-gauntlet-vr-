@@ -296,7 +296,7 @@ const POOLS={
 const D=new THREE.Object3D();D.rotation.order='YXZ';const TC=new THREE.Color();
 
 // ---------- sound
-const BUILD='20261125162053',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
+const BUILD='20261125163424',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
 let AC=null,musicOn=true,musicT=0,step=0,nb=null;const lastS={};
 function initAudio(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const b=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;nb=b}if(AC.state==='suspended')AC.resume()}catch(e){AC=null}}
 function tone(f,d,type,v,f2,at){if(!AC)return;const t=at||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
