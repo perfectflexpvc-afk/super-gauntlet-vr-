@@ -490,7 +490,7 @@ const POOLS={
 const D=new THREE.Object3D();D.rotation.order='YXZ';const TC=new THREE.Color();
 
 // ---------- sound
-const BUILD='20261126081217',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
+const BUILD='20261126105832',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
 let AC=null,musicOn=true,musicT=0,step=0,nb=null;const lastS={};
 function initAudio(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const b=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;nb=b}if(AC.state==='suspended')AC.resume()}catch(e){AC=null}}
 function tone(f,d,type,v,f2,at){if(!AC)return;const t=at||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
@@ -508,9 +508,16 @@ const RIFF=[40,40,52,40,43,43,55,43,38,38,50,38,45,47,48,47];
 const SONGS=[1,2,3,4].map(n=>`music/dungeon-master-${n}.mp3`),BGM=new Audio();BGM.loop=true;BGM.preload='auto';BGM.volume=.2;let bgmSrc='',bgmT=-9999;
 const songFor=()=>G.treasure?G.level%SONGS.length:(G.level-1)%SONGS.length;
 // angel levels play "Healing Waters" instead, faint far away and loud by her spring, and from her direction
-const ANGEL_SONG='music/healing-waters.mp3';let BGMR=null;const _ad=new THREE.Vector3();
+const ANGEL_SONG='music/healing-waters.mp3';
+// level 1 Dungeon Master, level 2 Dungeon Love, level 3 Dung Eater, then they take turns (angel, flood and treasure levels have their own; Dig Down past 15)
+const ROT=['music/dungeon-master-1.mp3','music/dungeon-love.mp3','music/dung-eater.mp3'],TREASURE_SONG='music/treasure-room-run.mp3';
+// recorded voice lines, played over the music on every device (phones and headsets ignore the browser's speech voice)
+const VO={},VON=['treasure','run-go','strength'];let duckUntil=0;
+function voPreload(){if(!AC||VO._p)return;VO._p=1;for(const n of VON)fetch(V('music/vo-'+n+'.mp3')).then(r=>r.arrayBuffer()).then(b=>new Promise((ok,no)=>{const q=AC.decodeAudioData(b,ok,no);if(q&&q.then)q.then(ok,no)})).then(buf=>{VO[n]=buf}).catch(()=>{})}
+function voice(n,duck,tries){if(!tries&&window.__vlog)window.__vlog.push(n+(duck?'(duck)':''));if(!AC||G&&G.demo)return;voPreload();const b=VO[n];if(!b){if((tries||0)<12)setTimeout(()=>voice(n,duck,(tries||0)+1),250);return}
+ try{const s=AC.createBufferSource(),g=AC.createGain();g.gain.value=1;s.buffer=b;s.connect(g);g.connect(AC.destination);s.start();if(duck)duckUntil=performance.now()+b.duration*1000+300}catch(e){}}let BGMR=null;const _ad=new THREE.Vector3();
 function bgmRoute(){if(BGMR!==null||!AC)return;try{const s=AC.createMediaElementSource(BGM),g=AC.createGain(),pan=AC.createStereoPanner?AC.createStereoPanner():null;if(pan){s.connect(pan);pan.connect(g)}else s.connect(g);g.connect(AC.destination);g.gain.value=.2;BGM.volume=1;BGMR={g,pan}}catch(e){BGMR=false}}
-function musicMix(){let vol=.2,pan=0;const pl=G&&G.pools&&G.pools[0];
+function musicMix(){let vol=.2*(performance.now()<duckUntil?.3:1),pan=0;const pl=G&&G.pools&&G.pools[0];
  if(pl){let best=null,bd=1e9;for(const p of players)if(p.local&&p.alive){const d=Math.hypot(p.x-pl.x,p.z-pl.z);if(d<bd){bd=d;best=p}}
   if(best){const k=clamp(1-(bd-3)/50,0,1);vol=.025+.45*k*k;try{best.cam.getWorldDirection(_ad);const fx=_ad.x,fz=_ad.z,fl=Math.hypot(fx,fz)||1,ux=(pl.x-best.x)/(bd||1),uz=(pl.z-best.z)/(bd||1);pan=bd>2.5?clamp((ux*(-fz/fl)+uz*(fx/fl))*.85,-.85,.85):0}catch(e){}}else vol=.025}
  bgmRoute();if(BGMR){const g=BGMR.g.gain;g.value+=(vol-g.value)*.06;if(BGMR.pan){const pp=BGMR.pan.pan;pp.value+=(pan-pp.value)*.1}}else BGM.volume=clamp(BGM.volume+(vol-BGM.volume)*.06,0,1)}
@@ -521,7 +528,7 @@ function menuLoopTick(){if(!AC)return;const want=musicOn&&BOOTDONE&&!$('#menu').
  if(want&&MENU.buf&&!MENU.src){if(!MENU.g){MENU.g=AC.createGain();MENU.g.gain.value=0;MENU.g.connect(AC.destination)}const s=AC.createBufferSource();s.buffer=MENU.buf;s.loop=true;s.loopStart=3.0;s.loopEnd=MENU.buf.duration;s.connect(MENU.g);s.start();MENU.src=s}
  if(MENU.g){const t=want?.275:0;MENU.g.gain.value+=(t-MENU.g.gain.value)*(want?.04:.08);if(!want&&MENU.src&&MENU.g.gain.value<.01){try{MENU.src.stop()}catch(e){}MENU.src=null}}}
 function music(){menuLoopTick();const want=musicOn&&G&&!G.demo&&!G.over&&!G.paused&&!!G.lg;if(!want){if(!BGM.paused)BGM.pause();return}
- musicMix();const src=G.pools&&G.pools.length?ANGEL_SONG:G.flood?'music/flooded-dungeon.mp3':G.level>15?'music/dig-down.mp3':SONGS[songFor()];if(src!==bgmSrc){bgmSrc=src;BGM.src=V(src);bgmT=-9999}
+ musicMix();voPreload();const src=G.pools&&G.pools.length?ANGEL_SONG:G.flood?'music/flooded-dungeon.mp3':G.treasure?TREASURE_SONG:G.level>15?'music/dig-down.mp3':ROT[(G.level-1)%ROT.length];if(src!==bgmSrc){bgmSrc=src;BGM.src=V(src);bgmT=-9999}
  if(BGM.paused&&performance.now()-bgmT>1500){bgmT=performance.now();try{const r=BGM.play();if(r&&r.catch)r.catch(()=>{})}catch(e){}}}
 function unlockMusic(){try{bgmSrc=SONGS[0];BGM.src=V(SONGS[0]);const r=BGM.play();if(r&&r.then)r.then(()=>{if(!G||G.demo)BGM.pause()}).catch(()=>{})}catch(e){}}
 let sayT=0;function say(t,force){const n=performance.now();if(!force&&n-sayT<2500)return;sayT=n;try{const u=new SpeechSynthesisUtterance(t);u.rate=.9;u.pitch=.5;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
@@ -599,11 +606,11 @@ function buildLevel(){
  const wc=c=>[c[0]*T+T/2+rf(-.6,.6),c[1]*T+T/2+rf(-.6,.6)];
  const sx=L.start.cx*T+T/2,sz=L.start.cy*T+T/2;G.start={x:sx,z:sz};
  const put=(type,n,arr)=>{for(let k=0;k<n;k++){const p=wc(take(arr||cells));addItem(type,p[0],p[1])}};
- if(tr){put('treasure',34,roomCells.length?roomCells:cells);put('food',3);put('charm',2);put('potion',2);put('key',1);for(let k=0;k<8;k++){const p=wc(take(cells));addChest(p[0],p[1])}G.timer=35}
+ if(tr){put('treasure',34,roomCells.length?roomCells:cells);put('food',3);put('charm',2);put('potion',2);put('key',1);for(let k=0;k<8;k++){const p=wc(take(cells));addChest(p[0],p[1])}G.timer=106;if(!G.demo)voice('treasure')}
  else{
   // monster schedule: only ghosts and green grunts for levels 1-8, then one new kind a level; snake trolls at 15, fire devils at 20, Death at 25
   const types=['ghost','grunt'];for(const [L,t] of [[9,'gargoyle'],[10,'lobber'],[11,'sorcerer'],[15,'naga'],[20,'demon']])if(lv>=L)types.push(t);
-  const ng=Math.min(3+lv*1.5,22)|0;for(let k=0;k<ng;k++){const c=take(roomCells.length?roomCells:cells);addGen(types[rnd(types.length)],c[0]*T+T/2,c[1]*T+T/2)}
+  const ng=(Math.min(3+lv*1.5,22)*(lv===7?.5:1))|0;for(let k=0;k<ng;k++){const c=take(roomCells.length?roomCells:cells);addGen(types[rnd(types.length)],c[0]*T+T/2,c[1]*T+T/2)}
   if(lv>=25&&Math.random()<.65){const c=take(roomCells.length?roomCells:cells);addGen('death',c[0]*T+T/2,c[1]*T+T/2)}
   put('food',3+rnd(2)+Math.floor(lv/3));put('potion',1+(lv%2));put('charm',1);put('treasure',4+lv);for(let k=0;k<3+rnd(3);k++){const p=wc(take(cells));addChest(p[0],p[1])}
   let groups=0;const seen=new Uint8Array(W*H);for(let k=0;k<W*H;k++)if(g[k]===2&&!seen[k]){groups++;const st=[k];seen[k]=1;while(st.length){const c=st.pop();for(const d of [1,-1,W,-W]){const n=c+d;if(n>=0&&n<W*H&&g[n]===2&&!seen[n]){seen[n]=1;st.push(n)}}}}
@@ -615,7 +622,7 @@ function buildLevel(){
  RNG=Math.random;const off=[[-1,-1],[1,-1],[-1,1],[1,1]];
  if(G.net!=='client')players.forEach((p,i)=>{const o=off[p.i%4];p.x=sx+o[0]*1.4;p.z=sz+o[1]*1.4;p.yaw=0;p.pitch=0;p.tgold=0;p.spawn={x:p.x,z:p.z}});
  if(L.secret)makePool(L.secret.cx*T+T/2,L.secret.cy*T+T/2);
- if(!tr&&lv>=22&&(lv-15)%7===0)makeFlood();
+ if(!tr&&(lv===7||lv>=22&&(lv-15)%7===0))makeFlood(lv===7);
  for(const p of players)applyGrowth(p,G.level===1&&!G.treasure&&!p.grown);for(const p of players)p.grown=true;
  G.cap=tr?0:Math.min(130+lv*30,380);G.dmgScale=1+(lv-1)*.1;G.spd=1+Math.min(lv,12)*.03;
  G.embers=[];drawMapBase();assignLights();
@@ -941,7 +948,7 @@ function breakAround(x,z,R,dmg,p){const i0=Math.floor((x-R)/T),i1=Math.floor((x+
 function hurtEnemy(e,dmg,p,kx,kz,stun){if(e.dead)return;const D0=EDEF[e.type];if(D0.death){sfx('clang');burst(e.x,1.5,e.z,0xc0c0c0,3,2);return}if(e.hidden)return;if(p&&p.buff==='might'&&p.buffT>0)dmg*=2;e.hp-=dmg;e.flash=.12;if(kx!==undefined){e.kx=kx;e.kz=kz}if(stun)e.stun=Math.max(e.stun,stun);sfx('hit');if(e.hp<=0)killEnemy(e,p)}
 function killEnemy(e,p){if(e.dead)return;e.dead=true;const D0=EDEF[e.type];burst(e.x,1.2,e.z,D0.burst,12,5);sfx('kill');
  if(p){p.score+=D0.pts;p.kills++;gainPower(p,D0.death?20:1);if(D0.death)pmsg(p,'Death destroyed! +1000')}for(const w of players)if(w.hero==='wizard'&&w.alive)w.mana=Math.min(100,w.mana+(w===p?4:1))}
-function hurtGen(gn,d,p){if(gn.dead)return;gn.hp-=d;burst(gn.x,.8,gn.z,0xc8b8a0,4);if(gn.hp<=0){gn.dead=true;G.lg.remove(gn.mesh);burst(gn.x,.8,gn.z,0xe8e0c8,30,7);sfx('gen');if(p){p.score+=50;gainPower(p,3)}G.gens=G.gens.filter(g=>!g.dead);drawMapBase()}}
+function hurtGen(gn,d,p){if(gn.dead)return;gn.hp-=d;burst(gn.x,.8,gn.z,0xc8b8a0,4);if(gn.hp<=0){gn.dead=true;G.lg.remove(gn.mesh);burst(gn.x,.8,gn.z,0xe8e0c8,30,7);sfx('gen');if(p){p.score+=50;gainPower(p,3)}if(G.level===1&&!G.treasure&&!G.saidStrength){G.saidStrength=true;voice('strength',true)}G.gens=G.gens.filter(g=>!g.dead);drawMapBase()}}
 function openChest(c,p){if(c.open)return;c.open=true;if(p&&p.local)rumble(p,70,.35);G.lg.remove(c.mesh);burst(c.x,.6,c.z,0xd0a040,16);G.chests=G.chests.filter(x=>!x.open);const r=Math.random();
  if(r<.06&&!G.treasure){for(let k=0;k<6;k++)spawnEnemy('ghost',c.x+rf(-2,2),c.z+rf(-2,2));if(p)pmsg(p,'A trap! Ghosts burst out');sfx('hurt');return}
  const t=r<.45?'treasure':r<.68?'food':r<.78?'potion':r<.9?'charm':'key';addItem(t,c.x,c.z);if(r<.3)addItem('treasure',c.x+rf(-.5,.5),c.z+rf(-.5,.5));sfx('gold')}
@@ -986,7 +993,12 @@ function ability2(p){if(p.hero!=='wizard'||p.cd2>0)return;p.cd2=.5;p.anim2=1;p.s
   const cx=p.x+f.x*2.4,cz=p.z+f.z*2.4;ring(cx,cz,1.2+t*.35,t>=3?0xb39cff:0x9fd8ff);burst(cx,.3,cz,t>=3?0xb39cff:0xbfe8ff,14+t*6,3+t);p.shake=Math.max(p.shake,.15+t*.04);rumble(p,90,.3+t*.1)}
  for(const g of G.gens.slice())if(Math.hypot(g.x-p.x,g.z-p.z)<3.6)hurtGen(g,dmg,p);for(const c of G.chests.slice())if(Math.hypot(c.x-p.x,c.z-p.z)<3)openChest(c,p);breakAround(p.x+f.x*2,p.z+f.z*2,1,dmg,p)}
 function blast(p,x,z,R){for(const e of G.enemies)if(!e.dead&&Math.hypot(e.x-x,e.z-z)<R)killEnemy(e,p);for(const g of G.gens.slice())if(Math.hypot(g.x-x,g.z-z)<R)hurtGen(g,10,p);ring(x,z,R,0x80a0ff);burst(x,1,z,0x80a0ff,40,8)}
-function usePotion(p){if(p.potions<=0){pmsg(p,'No potions');return}p.potions--;blast(p,p.x,p.z,20);G.flash=1;sfx('potion');rumble(p,400,.8)}
+function usePotion(p){if(p.potions<=0){pmsg(p,'No potions');return}p.potions--;blast(p,p.x,p.z,20);G.flash=1;sfx('potion');rumble(p,400,.8);
+ // stronger potions as the dungeon gets deeper: monsters near you and your fellowship freeze in time (wherever they are), generators stall, flood water stops rising
+ const fz=Math.min(4+G.level*.25,12),near=players.filter(q=>q.alive);let n=0;
+ for(const e of G.enemies)if(!e.dead&&near.some(q=>Math.hypot(e.x-q.x,e.z-q.z)<30)){e.frz=Math.max(e.frz||0,fz);n++}G.genFrz=Math.max(G.genFrz||0,fz);
+ let msg='Time freezes for '+Math.round(fz)+'s!';if(G.flood){const wf=Math.min(8+G.level*.3,20);G.flood.frz=Math.max(G.flood.frz||0,wf);msg+=' The water stops for '+Math.round(wf)+'s'}
+ for(const q of humans())pmsg(q,msg);ring(p.x,p.z,30,0xbfeaff)}
 function eat(p){if(p.pouch<=0){pmsg(p,'No stored food');return}if(p.hp>=p.max){pmsg(p,'Health is full');return}const fh=Math.max(50,Math.round(150*growth()));p.pouch--;p.hp=Math.min(p.max,p.hp+fh);pmsg(p,'Ate stored food: +'+fh);sfx('food')}
 
 // ---------- updates
@@ -1044,10 +1056,10 @@ function syncPlayer(p,vr,dt){p.dolly.position.set(p.x,0,p.z);p.dolly.rotation.y=
  if(p.bubble){p.bubble.position.set(p.x,0,p.z);p.bubble.visible=p.alive}
  if(vr)p.vm.root.visible=!VRART.on;
  if(vr&&XR.right&&p.vm.root.parent!==XR.right){XR.right.add(p.vm.root);p.vm.root.position.set(-p.vm.hand[0],-p.vm.hand[1],-p.vm.hand[2]);setLayer(p.vm.root,0)}}
-function spawnFromGens(dt){if(G.transT>0)return;for(const g of G.gens){g.t-=dt;if(Math.random()<dt*4)G.parts.push({x:g.x+rf(-.4,.4),y:.7,z:g.z+rf(-.4,.4),vx:0,vy:rf(1,2.5),vz:0,life:rf(.5,1),c:EDEF[g.type].gen,g:true,ng:true});
+function spawnFromGens(dt){if(G.transT>0)return;if(G.genFrz>0){G.genFrz-=dt;return}for(const g of G.gens){g.t-=dt;if(Math.random()<dt*4)G.parts.push({x:g.x+rf(-.4,.4),y:.7,z:g.z+rf(-.4,.4),vx:0,vy:rf(1,2.5),vz:0,life:rf(.5,1),c:EDEF[g.type].gen,g:true,ng:true});
  if(g.t>0)continue;g.t=g.rate*rf(.7,1.3);if(G.enemies.length>=G.cap)continue;const n=nearest(g);if(!n||n.d>42)continue;const a=Math.random()*TAU;spawnEnemy(g.type,g.x+Math.cos(a)*1.5,g.z+Math.sin(a)*1.5)}}
 function updateEnemies(dt){const W=G.W,E=G.enemies,wiz=players.filter(p=>p.hero==='wizard'&&p.alive),kd=Math.pow(.02,dt);
- for(let k=0;k<E.length;k++){const e=E[k];if(e.dead)continue;const D0=EDEF[e.type];e.atk-=dt;e.stun-=dt;e.flash-=dt;
+ for(let k=0;k<E.length;k++){const e=E[k];if(e.dead)continue;if(e.frz>0){e.frz-=dt;continue}const D0=EDEF[e.type];e.atk-=dt;e.stun-=dt;e.flash-=dt;
   if(e.kx||e.kz){e.x+=e.kx*dt;e.z+=e.kz*dt;e.kx*=kd;e.kz*=kd;if(Math.abs(e.kx)+Math.abs(e.kz)<.1)e.kx=e.kz=0}
   if(D0.water&&waterAI(e,dt))continue;
   if(D0.blink){e.blink-=dt;if(e.blink<=0){e.hidden=!e.hidden;e.blink=e.hidden?rf(1,1.6):rf(1.8,2.8);burst(e.x,1.4,e.z,0xc070ff,8,2)}}
@@ -1127,8 +1139,8 @@ function flushAll(){for(const k in POOLS)POOLS[k].n=0;for(const k in GL)GL[k].n=
   if(e.hidden){if(Math.random()<.3)GL.spark.add(e.x+rf(-.4,.4),rf(.3,2),e.z+rf(-.4,.4),.5,.25,.7);continue}
   const fl=e.type==='ghost'||e.type==='death',y=fl?.12+Math.sin(t*3+e.ph)*.12:Math.abs(Math.sin(t*9+e.ph))*.08*e.moving;
   const rz=fl?Math.sin(t*2+e.ph)*.08:Math.sin(t*9+e.ph)*.09*e.moving,rx=.12*e.moving+(e.flash>0?-.25:0);
-  const MP=MPOOL[e.type];if(MP&&MP.ok){if(MP.n<MP.max){const i=MP.n++;D.position.set(e.x,D0.water?waterY(e,t):(MSPR[e.type].f?.15+Math.sin(t*2.6+e.ph)*.12:Math.abs(Math.sin(t*8+e.ph))*.05*e.moving),e.z);D.rotation.set(0,0,0);D.scale.set(1,1,1);D.updateMatrix();MP.m.setMatrixAt(i,D.matrix);MP.yaw.array[i]=e.rot;const fl=e.flash>0;MP.tint.array[i*3]=fl?1.3:.88;MP.tint.array[i*3+1]=fl?.45:.84;MP.tint.array[i*3+2]=fl?.4:.82}continue}
-  put(e.type,e.x,y,e.z,e.rot,rx,rz,1,1,e.flash>0?0xff6050:0xffffff);
+  const MP=MPOOL[e.type];if(MP&&MP.ok){if(MP.n<MP.max){const i=MP.n++;D.position.set(e.x,D0.water?waterY(e,t):(MSPR[e.type].f?.15+Math.sin(t*2.6+e.ph)*.12:Math.abs(Math.sin(t*8+e.ph))*.05*e.moving),e.z);D.rotation.set(0,0,0);D.scale.set(1,1,1);D.updateMatrix();MP.m.setMatrixAt(i,D.matrix);MP.yaw.array[i]=e.rot;const fl=e.flash>0,fr=e.frz>0;MP.tint.array[i*3]=fr?.6:fl?1.3:.88;MP.tint.array[i*3+1]=fr?.88:fl?.45:.84;MP.tint.array[i*3+2]=fr?1.35:fl?.4:.82}continue}
+  put(e.type,e.x,y,e.z,e.rot,rx,rz,1,1,e.frz>0?0x9fd8ff:e.flash>0?0xff6050:0xffffff);
   const s=Math.sin(e.rot),c=Math.cos(e.rot),ey=y+D0.ey,ez=D0.ez,ex=D0.ex,col=D0.eye,br=e.type==='ghost'?1.4:1.2;
   GL.eye.add(e.x+s*ez+c*ex,ey,e.z+c*ez-s*ex,col[0]*br,col[1]*br,col[2]*br);GL.eye.add(e.x+s*ez-c*ex,ey,e.z+c*ez+s*ex,col[0]*br,col[1]*br,col[2]*br);
   if(e.type==='sorcerer')GL.orb.add(e.x+c*.6+s*.3,y+2.2,e.z-s*.6+c*.3,.6,.3,.8)}
@@ -1592,19 +1604,20 @@ function poolTick(dt){const t=G.time;
    if(p.el&&d<11&&(G.secretOpen||!G.secret)&&!pl.greeted.has(p.i)){pl.greeted.add(p.i);if(p.el.say){p.el.say.querySelector('p').textContent=ANGEL_LINE;p.el.say.style.opacity=1;p.sayT=9}
     if(!pl.spoke){pl.spoke=true;sayAngel(ANGEL_LINE)}if(renderer.xr.isPresenting&&p.i===0)angelBubble(pl)}}}}
 
-// ---------- flood levels (22, 29, 36 ...): the water rises; past the knees heroes slow down and snake trolls swim faster
-function makeFlood(){const w=G.W*T,h=G.H*T,c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');x.fillStyle='#1d5866';x.fillRect(0,0,256,256);
+// ---------- flood levels (an easy one at 7, then 22, 29, 36 ...): the water rises; past the knees heroes slow down and snake trolls swim faster
+function makeFlood(easy){const w=G.W*T,h=G.H*T,c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');x.fillStyle='#1d5866';x.fillRect(0,0,256,256);
  for(let i=0;i<140;i++){x.strokeStyle=`rgba(170,230,240,${.05+Math.random()*.12})`;x.lineWidth=1+Math.random()*2;x.beginPath();const a=Math.random()*256,b=Math.random()*256,r=6+Math.random()*26;x.arc(a,b,r,Math.random()*3,Math.random()*3+2);x.stroke()}
  const tex=new THREE.CanvasTexture(c);tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.repeat&&tex.repeat.set(G.W/2,G.H/2);
  const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({map:tex,color:0x7fc4d0,emissive:0x0b3440,roughness:.15,metalness:.2,transparent:true,opacity:.62,depthWrite:false}));
- m.rotation.x=-PI/2;m.position.set(w/2,.02,h/2);m.renderOrder=2;G.lg.add(m);G.flood={h:.02,mesh:m,tex,said:0,max:1.3,rate:1.3/170};
+ m.rotation.x=-PI/2;m.position.set(w/2,.02,h/2);m.renderOrder=2;G.lg.add(m);G.flood=easy?{h:.02,mesh:m,tex,said:0,max:.95,rate:.95/200,quota:{eel:2,drowned:1}}:{h:.02,mesh:m,tex,said:0,max:1.3,rate:1.3/170};
  if(!G.demo){banner('The dungeon is flooding!','Find the keys and the exit before the water rises',3.5);say('The dungeon is flooding! Find the exit!',true)}}
 function floodSlow(){const f=G&&G.flood;return f?1-clamp((f.h-.45)/.8,0,1)*.45:1}
-function floodTick(dt){const f=G.flood;if(!f)return;if(G.net!=='client'&&G.transT<=0)f.h=Math.min(f.max,f.h+f.rate*dt);
+function floodTick(dt){const f=G.flood;if(!f)return;if(f.frz>0){f.frz-=dt;if(f.frz<=0)for(const q of humans())pmsg(q,'The water moves again!')}else if(G.net!=='client'&&G.transT<=0)f.h=Math.min(f.max,f.h+f.rate*dt);
+ if(f.mesh.material.color)f.mesh.material.color.setHex(f.frz>0?0xdaf6ff:0x7fc4d0);
  f.mesh.position.y=f.h;if(f.tex.offset){f.tex.offset.x=(G.time*.015)%1;f.tex.offset.y=(G.time*.01)%1}
  const marks=[[.45,'The water is at your knees'],[.85,'The water is at your waist. You’re slowing down'],[1.2,'The water is at your chest! Hurry!']];
- if(f.said<marks.length&&f.h>=marks[f.said][0]){for(const q of humans()){pmsg(q,marks[f.said][1]);rumble(q,180,.4)}say(marks[f.said][1],true);f.said++}
- if(G.net!=='client'&&G.transT<=0)waterSpawn(f,dt);
+ if(f.said<marks.length&&f.h>=marks[f.said][0]){for(const q of humans()){pmsg(q,marks[f.said][1]);rumble(q,180,.4)}if(f.said>=1)voice('run-go');else say(marks[f.said][1],true);f.said++}
+ if(G.net!=='client'&&G.transT<=0&&!(f.frz>0))waterSpawn(f,dt);
  if(f.h>.3&&Math.random()<dt*3)for(const q of players)if(q.alive&&q.moving>.5)spark(q.x+rf(-.5,.5),f.h+.05,q.z+rf(-.5,.5),0xbfeaff,.4)}
 
 // ---------- VR comfort: turning style and a darkened edge while moving
@@ -1638,7 +1651,7 @@ function waterSpawn(f,dt){if(f.h<.35)return;const deep=clamp((f.h-.35)/(f.max-.3
  if(Math.random()>rate*dt)return;let wm=0;for(const e of G.enemies)if(!e.dead&&EDEF[e.type].water)wm++;if(wm>=18+deep*40||G.enemies.length>=G.cap)return;
  const alive=players.filter(p=>p.alive);if(!alive.length)return;const p=alive[Math.floor(Math.random()*alive.length)];
  for(let k=0;k<12;k++){const a=Math.random()*TAU,d=rf(5,13),x=p.x+Math.cos(a)*d,z=p.z+Math.sin(a)*d;if(blockedAt(x,z,.6))continue;
-  const r=Math.random(),type=r<.35?'eel':r<.8?'drowned':'drownbrute';const before=G.enemies.length;spawnEnemy(type,x,z);const e=G.enemies[before];if(e&&e.type===type){e.hidden=true;e.wait=rf(1,1.8)}return}}
+  let type;if(f.quota){const left=Object.keys(f.quota).filter(k=>f.quota[k]>0);if(!left.length)return;type=left[rnd(left.length)]}else{const r=Math.random();type=r<.35?'eel':r<.8?'drowned':'drownbrute'}const before=G.enemies.length;spawnEnemy(type,x,z);const e=G.enemies[before];if(e&&e.type===type){e.hidden=true;e.wait=rf(1,1.8);if(f.quota)f.quota[type]--}return}}
 
 let VRDEAD=null;
 function vrDeadTick(p){const show=!!(p&&!p.alive&&G&&!G.over&&renderer.xr.isPresenting);if(!show){if(VRDEAD)VRDEAD.visible=false;return}
