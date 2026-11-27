@@ -25,6 +25,7 @@ const EDEF={
  ghost:{hp:2,speed:3.4,touch:18,pts:10,burst:0xbfd0ff,r:.45,kami:true,eye:[.5,.95,1],ey:1.6,ez:.32,ex:.09,gen:0x7fd8ff},
  tspider:{hp:9000,speed:0,touch:25,pts:5000,burst:0x803020,r:2.2,boss:true,eye:[1,.1,.1],ey:3.4,ez:.3,ex:.1,gen:0xff2020},
  egg:{hp:30,speed:0,touch:0,pts:25,burst:0x9a8060,r:.75,egg:true,eye:[0,0,0],ey:0,ez:0,ex:0,gen:0xd09040},
+ gremlin:{hp:10,speed:4.6,touch:16,pts:75,burst:0x6a8a30,r:.42,eye:[1,.9,.2],ey:1.25,ez:.25,ex:.07,gen:0x9fe060},
  spiderling:{hp:4,speed:5.6,touch:10,pts:15,burst:0x503020,r:.5,eye:[1,.1,.1],ey:.7,ez:.45,ex:.08,gen:0xff2020},
  grunt:{hp:5,speed:3.1,touch:12,pts:20,burst:0x8fa040,r:.5,eye:[1,.2,.1],ey:1.82,ez:.3,ex:.12,gen:0x9fe060},
  demon:{hp:7,speed:2.7,touch:14,pts:30,burst:0xff5030,r:.5,shoots:true,eye:[1,.85,.2],ey:2.1,ez:.3,ex:.13,gen:0xff7030},
@@ -286,7 +287,7 @@ const POOLS={
  demon:new Pool(GEO.demon,stdv({roughness:.45,emissive:0x2a0402,side:THREE.DoubleSide}),420),
  lobber:new Pool(GEO.lobber,stdv({roughness:.85}),300),
  sorcerer:new Pool(GEO.sorcerer,stdv({roughness:.55,emissive:0x14061e}),300),
- gargoyle:new Pool(GEO.demon,stdv({roughness:.5,emissive:0x0a2004,side:THREE.DoubleSide}),420),naga:new Pool(GEO.grunt,stdv({roughness:.6}),300),eel:new Pool(GEO.ghost,stdv({roughness:.3,emissive:0x0a3a14}),200),drowned:new Pool(GEO.grunt,stdv({roughness:.8}),300),drownbrute:new Pool(GEO.grunt,stdv({roughness:.8}),200),
+ gargoyle:new Pool(GEO.demon,stdv({roughness:.5,emissive:0x0a2004,side:THREE.DoubleSide}),420),naga:new Pool(GEO.grunt,stdv({roughness:.6}),300),eel:new Pool(GEO.ghost,stdv({roughness:.3,emissive:0x0a3a14}),200),drowned:new Pool(GEO.grunt,stdv({roughness:.8}),300),gremlin:new Pool(GEO.grunt,stdv({roughness:.7}),120),drownbrute:new Pool(GEO.grunt,stdv({roughness:.8}),200),
  death:new Pool(GEO.death,stdv({roughness:.95,metalness:.1,side:THREE.DoubleSide}),20),
  axe:new Pool(GEO.axe,stdv({metalness:.85,roughness:.32}),150),axe5:new Pool(GEO.axe5,stdv({metalness:.85,roughness:.32,emissive:0x203040}),150),
  arrow:new Pool(GEO.arrow,stdv({roughness:.6}),400),
@@ -299,7 +300,7 @@ const POOLS={
 const D=new THREE.Object3D();D.rotation.order='YXZ';const TC=new THREE.Color();
 
 // ---------- sound
-const BUILD='20261127093720',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
+const BUILD='20261127101241',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
 let AC=null,musicOn=true,musicT=0,step=0,nb=null;const lastS={};
 function initAudio(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const b=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;nb=b}if(AC.state==='suspended')AC.resume()}catch(e){AC=null}}
 function tone(f,d,type,v,f2,at){if(!AC)return;const t=at||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
@@ -389,21 +390,21 @@ function buildLevel(){
  const lg=G.lg=new THREE.Group();scene.add(lg);
  if(G.net!=='client')G.seed=(Math.random()*2e9)|0;RNG=mulberry(G.seed);G.genId=0;G.chestId=0;
  const tr=G.treasure,lv=G.level,L=(lv===30&&!tr)?genLair():genLevel(lv,tr),W=L.W,H=L.H,g=L.g;
- Object.assign(G,{W,H,g,enemies:[],proj:[],eproj:[],rocks:[],items:[],gens:[],chests:[],parts:[],fx:[],sconces:[],doorMesh:new Map(),doorHp:new Map(),crack:new Map(),flood:null,deathCalm:false,boss:null,tsSeen:0,waves:[],orbs:[],remains:[],exitLocked:false,tsNet:null,tsOrb:null,tsRem:null,pools:[],secret:L.secret||null,secretOpen:false,transT:0,flowT:0,lightT:0});
+ Object.assign(G,{W,H,g,enemies:[],proj:[],eproj:[],rocks:[],items:[],gens:[],chests:[],parts:[],fx:[],sconces:[],doorMesh:new Map(),doorHp:new Map(),crack:new Map(),flood:null,deathCalm:false,boss:null,tsSeen:0,tsAwake:false,arena:null,wet:null,wetRooms:null,waves:[],orbs:[],remains:[],exitLocked:false,tsNet:null,tsOrb:null,tsRem:null,pools:[],secret:L.secret||null,secretOpen:false,transT:0,flowT:0,lightT:0});
  G.dist=new Uint16Array(W*H);G.hdist=new Uint16Array(W*H);G.q=new Int32Array(W*H);G.head=new Int32Array(W*H);
  const isWall=k=>g[k]===1,mm=new THREE.Matrix4(),qq=new THREE.Quaternion(),one=new THREE.Vector3(1,1,1);
  const vis=[],faces=[];for(let j=0;j<H;j++)for(let i=0;i<W;i++){const k=j*W+i;if(!isWall(k))continue;let near=false;for(const [a,b] of N8){const x=i+a,y=j+b;if(x>=0&&y>=0&&x<W&&y<H&&!isWall(y*W+x)){near=true;if((!a||!b)&&g[y*W+x]===0)faces.push([i,j,a,b])}}if(near)vis.push([i,j])}
  const im=new THREE.InstancedMesh(wallGeo,wallMat,Math.max(1,vis.length));vis.forEach((c,n)=>{mm.makeTranslation(c[0]*T+T/2,WALLH/2,c[1]*T+T/2);im.setMatrixAt(n,mm)});im.count=vis.length;im.castShadow=im.receiveShadow=true;lg.add(im);
- for(let k=0;k<W*H;k++)if(g[k]===3){const m=new THREE.Mesh(wallGeo,L.secret&&k===L.secret.k?wallMat:crackMat);m.position.set((k%W)*T+T/2,WALLH/2,Math.floor(k/W)*T+T/2);m.castShadow=m.receiveShadow=true;lg.add(m);G.crack.set(k,{mesh:m,hp:9})}
- if(tr)wallMat.color.setRGB(1,.85,.55);else{const c=new THREE.Color().setHSL((.03+lv*.11)%1,.35,.82);wallMat.color.copy(c);crackMat.color.copy(c)}
+ const WEB=new Map(L.webs||[]);for(let k=0;k<W*H;k++)if(g[k]===3){if(WEB.has(k)){const m=webMesh(k,WEB.get(k),W);lg.add(m);G.crack.set(k,{mesh:m,hp:6,web:1});continue}const m=new THREE.Mesh(wallGeo,L.secret&&k===L.secret.k?wallMat:crackMat);m.position.set((k%W)*T+T/2,WALLH/2,Math.floor(k/W)*T+T/2);m.castShadow=m.receiveShadow=true;lg.add(m);G.crack.set(k,{mesh:m,hp:9})}
+ if(tr)wallMat.color.setRGB(1,.85,.55);else if(L.boss){wallMat.color.setHSL(.06,.12,.4);crackMat.color.setHSL(.06,.12,.4)}else{const c=new THREE.Color().setHSL((.03+lv*.11)%1,.35,.82);wallMat.color.copy(c);crackMat.color.copy(c)}
  FLOOR.map.repeat.set(W,H);FLOOR.normalMap.repeat.set(W,H);FLOOR.roughnessMap.repeat.set(W,H);
  const fl=new THREE.Mesh(new THREE.PlaneGeometry(W*T,H*T),floorMat);fl.rotation.x=-PI/2;fl.position.set(W*T/2,0,H*T/2);fl.receiveShadow=true;lg.add(fl);
  const ce=new THREE.Mesh(new THREE.PlaneGeometry(W*T,H*T),ceilMat);ce.rotation.x=PI/2;ce.position.set(W*T/2,WALLH,H*T/2);lg.add(ce);
  const floors=[];for(let j=0;j<H;j++)for(let i=0;i<W;i++)if(g[j*W+i]===0||g[j*W+i]===2)floors.push([i,j]);
- const bm=floors.filter(c=>c[1]%2===0);const beams=new THREE.InstancedMesh(new THREE.BoxGeometry(T,.4,.5),woodMat,Math.max(1,bm.length));bm.forEach((c,n)=>{mm.makeTranslation(c[0]*T+T/2,WALLH-.2,c[1]*T+T/2);beams.setMatrixAt(n,mm)});beams.count=bm.length;beams.castShadow=true;lg.add(beams);
+ const bm=L.boss?[]:floors.filter(c=>c[1]%2===0);const beams=new THREE.InstancedMesh(new THREE.BoxGeometry(T,.4,.5),woodMat,Math.max(1,bm.length));bm.forEach((c,n)=>{mm.makeTranslation(c[0]*T+T/2,WALLH-.2,c[1]*T+T/2);beams.setMatrixAt(n,mm)});beams.count=bm.length;beams.castShadow=true;lg.add(beams);
  const dc=floors.filter(c=>RNG()<.14&&N8.slice(0,4).some(([a,b])=>blk2(g,W,H,c[0]+a,c[1]+b)));const dec=new THREE.InstancedMesh(DECOR,decorMat,Math.max(1,dc.length));
  dc.forEach((c,n)=>{qq.setFromAxisAngle(_up,Math.random()*TAU);mm.compose(new THREE.Vector3(c[0]*T+T/2+rf(-1.3,1.3),0,c[1]*T+T/2+rf(-1.3,1.3)),qq,one.clone().setScalar(rf(.8,1.4)));dec.setMatrixAt(n,mm)});dec.count=dc.length;dec.castShadow=dec.receiveShadow=true;lg.add(dec);
- const sc=faces.filter(()=>RNG()<.15);const sm=new THREE.InstancedMesh(SCONCE,stdv({metalness:.6,roughness:.5}),Math.max(1,sc.length));
+ const sc=faces.filter(()=>RNG()<(L.boss?.045:.15));const sm=new THREE.InstancedMesh(SCONCE,stdv({metalness:.6,roughness:.5}),Math.max(1,sc.length));
  sc.forEach((f,n)=>{const [i,j,a,b]=f,x=i*T+T/2+a*T/2,z=j*T+T/2+b*T/2;qq.setFromAxisAngle(_up,Math.atan2(a,b));mm.compose(new THREE.Vector3(x,2.8,z),qq,one);sm.setMatrixAt(n,mm);G.sconces.push({x:x+a*.42,y:3.38,z:z+b*.42,ph:Math.random()*9})});sm.count=sc.length;lg.add(sm);
  for(let k=0;k<W*H;k++)if(g[k]===2){const i=k%W,j=Math.floor(k/W),m=new THREE.Mesh(DOORGEO,woodMat);m.position.set(i*T+T/2,WALLH*.47,j*T+T/2);if((i>0&&g[k-1]===0)||(i<W-1&&g[k+1]===0))m.rotation.y=PI/2;m.castShadow=m.receiveShadow=true;lg.add(m);G.doorMesh.set(k,m);G.doorHp.set(k,6)}
  const exg=new THREE.Group(),swirl=glowTex(x=>{x.translate(32,32);for(let a=0;a<3;a++){x.rotate(TAU/3);x.strokeStyle='rgba(120,255,160,.9)';x.lineWidth=4;x.beginPath();for(let t=0;t<1;t+=.02){const r=t*30,an=t*7;x.lineTo(Math.cos(an)*r,Math.sin(an)*r)}x.stroke()}});
@@ -413,8 +414,8 @@ function buildLevel(){
  const beam=new THREE.Mesh(Cy(1.3,1.65,WALLH,24,true),ADD({color:0x30ff70,opacity:.16,side:THREE.DoubleSide}));beam.position.y=WALLH/2;exg.add(beam);
  const xl=new THREE.PointLight(0x50ff90,1.6,16,2);xl.position.y=1.5;exg.add(xl);
  G.exit={x:L.ex.cx*T+T/2,z:L.ex.cy*T+T/2,beam,disc,g:exg};exg.position.set(G.exit.x,0,G.exit.z);lg.add(exg);
- G.lair=!!L.boss;if(L.boss){G.exitLocked=true;exg.visible=false;lairDress(lg,W,H,g)}
- HEMI.intensity=L.boss?.16:.55;scene.fog.density=L.boss?.055:.034;scene.fog.color.setHex(L.boss?0x040202:0x0b0705);scene.background.setHex(L.boss?0x040202:0x0b0705);if(L.boss)G.sconces.length=Math.min(G.sconces.length,3);
+ G.lair=!!L.boss;if(L.boss){G.exitLocked=true;exg.visible=false;lairDress(lg,W,H,g);G.arena={x:L.arena.i*T+T/2,z:L.arena.j*T+T/2,r:L.arena.r*T};wetRooms(lg,L)}
+ HEMI.intensity=L.boss?.1:.55;scene.fog.density=L.boss?.064:.034;scene.fog.color.setHex(L.boss?0x040202:0x0b0705);scene.background.setHex(L.boss?0x040202:0x0b0705);
  const inR=(c,r)=>c[0]>=r.x&&c[0]<r.x+r.w&&c[1]>=r.y&&c[1]<r.y+r.h;
  const cells=[];for(let j=0;j<H;j++)for(let i=0;i<W;i++)if(g[j*W+i]===0&&!inR([i,j],L.start)&&!(i===L.ex.cx&&j===L.ex.cy)&&!(L.secret&&inR([i,j],{x:L.secret.x,y:L.secret.y,w:3,h:3})))cells.push([i,j]);
  const roomCells=cells.filter(c=>L.rooms.slice(1).some(r=>inR(c,r)&&(tr||r!==L.ex)));
@@ -424,7 +425,9 @@ function buildLevel(){
  const sx=L.start.cx*T+T/2,sz=L.start.cy*T+T/2;G.start={x:sx,z:sz};
  const put=(type,n,arr)=>{for(let k=0;k<n;k++){const p=wc(take(arr||cells));addItem(type,p[0],p[1])}};
  if(tr){put('treasure',34,roomCells.length?roomCells:cells);put('food',3);put('charm',2);put('potion',2);put('key',1);for(let k=0;k<8;k++){const p=wc(take(cells));addChest(p[0],p[1])}G.timer=106;if(!G.demo)voice('treasure')}
- else if(L.boss){put('food',6);put('potion',3);put('charm',1);if(G.net!=='client')spawnBoss()}
+ else if(L.boss){const inA=c=>L.arenaMask[c[1]*W+c[0]],dung=cells.filter(c=>!inA(c)),arC=cells.filter(inA);
+  put('food',4,arC);put('potion',2,arC);put('food',12,dung);put('potion',4,dung);put('charm',3,dung);put('treasure',30,dung);for(let k=0;k<8;k++){const p=wc(take(dung));addChest(p[0],p[1])}
+  if(G.net!=='client'){spawnBoss();lairCritters(L,dung)}}
  else{
   // monster schedule: only ghosts and green grunts for levels 1-8, then one new kind a level; snake trolls at 15, fire devils at 20, Death at 25
   const types=['ghost','grunt'];for(const [L,t] of [[9,'gargoyle'],[10,'lobber'],[11,'sorcerer'],[15,'naga'],[20,'demon']])if(lv>=L)types.push(t);
@@ -446,7 +449,7 @@ function buildLevel(){
  G.cap=tr?0:Math.min(130+lv*30,380);G.dmgScale=1+(lv-1)*.1;G.spd=1+Math.min(lv,12)*.03;
  G.embers=[];drawMapBase();assignLights();
  if(!G.demo){if(tr){banner('Treasure Room','Grab the gold and reach the exit in 1:46',3)}
-  else if(L.boss){banner('Level 30 · The Troll Spider’s Lair','Smash his eggs before they hatch · Kill him to open the exit',4);if(G.time>2)say('Level 30. The Troll Spider.',true)}
+  else if(L.boss){banner('Level 30 · The Troll Spider’s Lair','Cut through the webs and find his cave at the heart of the dungeon',4.5);if(G.time>2)say('Level 30. The Troll Spider.',true)}
   else{banner('Level '+lv,lv===1?'Find the green portal of the exit':lv===25?'Beware: Death walks these halls':'The horde grows stronger',2.5);if(G.time>2)say(lv===25?'Level 25. Beware of Death.':'Level '+lv,true)}}
 }
 function addItem(type,x,z){const m=new THREE.Mesh(ITEMGEO[type],IMAT[type]);m.position.set(x,0,z);m.castShadow=true;G.lg.add(m);G.items.push({type,x,z,mesh:m,ph:Math.random()*6})}
@@ -462,7 +465,7 @@ function assignLights(){const N=quality==='high'?4:2;if(!G.sconces||!G.sconces.l
  SL.forEach((l,k)=>{const c=k<N&&s[k]?s[k].c:null;l.userData.c=c;if(c)l.position.set(c.x,c.y,c.z);else l.intensity=0})}
 
 // ---------- minimap
-function drawMapBase(){const c=G.mapC||(G.mapC=document.createElement('canvas'));c.width=G.W;c.height=G.H;const x=c.getContext('2d');for(let j=0;j<G.H;j++)for(let i=0;i<G.W;i++){const v=G.g[j*G.W+i];x.fillStyle=v===1?'#2a1d14':v===2?'#e0902a':v===3?'#8a5a3a':'#7a6650';x.fillRect(i,j,1,1)}
+function drawMapBase(){const c=G.mapC||(G.mapC=document.createElement('canvas'));c.width=G.W;c.height=G.H;const x=c.getContext('2d');for(let j=0;j<G.H;j++)for(let i=0;i<G.W;i++){const v=G.g[j*G.W+i];const wb=v===3&&G.crack.get(j*G.W+i)&&G.crack.get(j*G.W+i).web;x.fillStyle=v===1?'#2a1d14':v===2?'#e0902a':wb?'#d8d8e4':v===3?'#8a5a3a':G.wet&&G.wet[j*G.W+i]?'#3f7484':'#7a6650';x.fillRect(i,j,1,1)}
  const s=G.secret;if(s){if(G.g[s.k]!==0){x.fillStyle='#2a1d14';x.fillRect(s.x,s.y,3,3);x.fillRect(s.k%G.W,Math.floor(s.k/G.W),1,1)}else{x.fillStyle='#7fe0ff';x.fillRect(s.cx,s.cy,1,1)}}}
 function drawMini(cv,p){const c=cv.getContext('2d'),S=cv.width,k=S/(Math.max(G.W,G.H)*T);c.clearRect(0,0,S,S);c.imageSmoothingEnabled=false;c.drawImage(G.mapC,0,0,G.W*T*k,G.H*T*k);
  c.fillStyle='#ff4030';for(const g of G.gens)c.fillRect(g.x*k-2,g.z*k-2,4,4);
@@ -638,7 +641,7 @@ cam.getWorldPosition(_cp);for(const p of players){const b=p.body;if(!b.bb||!b.bb
  const mat=b.atkReady&&p.anim>.2?b.bbAtkMat:b.bbMat;if(b.bb.material!==mat)b.bb.material=mat;if(mat.map)mat.map.offset.x=idx/8}}
 
 // ---------- your monster sheets, drawn as camera-facing sprites (front, 3/4 and side views)
-const MSPR={ghost:{h:2.6,f:1},grunt:{h:2.55},demon:{h:3.0,f:1},lobber:{h:1.9,f:1},sorcerer:{h:2.75},death:{h:3.15,f:1},gargoyle:{h:2.85,f:1},naga:{h:2.6},eel:{h:1.2,w:2.4},drowned:{h:2.6},drownbrute:{h:2.75},knife:{h:.62,p:1},knife5:{h:.7,p:1},spiderling:{h:2.4}};
+const MSPR={ghost:{h:2.6,f:1},grunt:{h:2.55},demon:{h:3.0,f:1},lobber:{h:1.9,f:1},sorcerer:{h:2.75},death:{h:3.15,f:1},gargoyle:{h:2.85,f:1},naga:{h:2.6},eel:{h:1.2,w:2.4},drowned:{h:2.6},drownbrute:{h:2.75},knife:{h:.62,p:1},knife5:{h:.7,p:1},spiderling:{h:2.4},gremlin:{h:1.85,src:'grunt'}};
 const BBV=`attribute float iYaw;attribute vec3 iTint;varying vec2 vUv;varying vec3 vTint;
 #include <fog_pars_vertex>
 void main(){vec3 c=(modelMatrix*instanceMatrix*vec4(0.,0.,0.,1.)).xyz;vec3 to=cameraPosition-c;to.y=0.;vec3 u=to/max(length(to),.001);vec3 r=vec3(u.z,0.,-u.x);
@@ -659,7 +662,7 @@ for(const [type,S] of Object.entries(MSPR)){const geo=new THREE.PlaneGeometry(S.
  const m=new THREE.InstancedMesh(geo,mat,max);m.frustumCulled=false;m.count=0;m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
  const yaw=new THREE.InstancedBufferAttribute(new Float32Array(max),1),tint=new THREE.InstancedBufferAttribute(new Float32Array(max*3),3);yaw.setUsage(THREE.DynamicDrawUsage);tint.setUsage(THREE.DynamicDrawUsage);geo.setAttribute('iYaw',yaw);geo.setAttribute('iTint',tint);
  const P={m,yaw,tint,max,n:0,ok:false};MPOOL[type]=P;scene.add(m);
- try{texLoader.load('sprites/m_'+type+'.webp',t=>{mat.uniforms.map.value=t;P.ok=true},undefined,()=>{})}catch(x){}}
+ try{texLoader.load('sprites/m_'+(S.src||type)+'.webp',t=>{mat.uniforms.map.value=t;P.ok=true},undefined,()=>{})}catch(x){}}
 
 // ---------- players
 function makePlayer(hk,ctrl,i){
@@ -761,7 +764,7 @@ function spark(x,y,z,col,life){if(G.parts.length<1300)G.parts.push({x,y,z,vx:rf(
 function ring(x,z,r,col){if(G.net==='host'&&G.fxq.length<14)G.fxq.push([1,Math.round(x*4),0,Math.round(z*4),col,Math.round(r)]);const m=new THREE.Mesh(new THREE.RingGeometry(.8,1,64),ADD({color:col,opacity:.9,side:THREE.DoubleSide}));m.rotation.x=-PI/2;m.position.set(x,.15,z);scene.add(m);G.fx.push({m,t:0,dur:.45,r})}
 function openDoor(k,p,useKey){const W=G.W,st=[k];G.g[k]=0;while(st.length){const c=st.pop();const m=G.doorMesh.get(c);if(m){G.lg.remove(m);G.doorMesh.delete(c);burst(m.position.x,1.5,m.position.z,0x8a6040,12,4)}for(const d of [1,-1,W,-W]){const n=c+d;if(n>=0&&n<W*G.H&&G.g[n]===2){G.g[n]=0;st.push(n)}}}if(useKey&&p)p.keys--;sfx('door');if(p)pmsg(p,useKey?'Door unlocked':'Door smashed open');drawMapBase();G.flowT=0}
 function hitTile(k,dmg,p,x,z){const v=G.g[k];if(v===2){const hp=(G.doorHp.get(k)||6)-dmg;G.doorHp.set(k,hp);burst(x,1.4,z,0x8a6040,4,3);sfx('wood');if(hp<=0)openDoor(k,p,false)}
- else if(v===3){const c=G.crack.get(k);if(!c)return;c.hp-=dmg;burst(x,1.6,z,0x8a7a68,5,3);sfx('thud');if(c.hp<=0){G.g[k]=0;G.lg.remove(c.mesh);G.crack.delete(k);const cx=(k%G.W)*T+T/2,cz=Math.floor(k/G.W)*T+T/2;burst(cx,2,cz,0x8a7a68,40,7);sfx('crumble');if(p)pmsg(p,'Wall broken!');drawMapBase();G.flowT=0}}}
+ else if(v===3){const c=G.crack.get(k);if(!c)return;const wb=c.web;c.hp-=dmg;burst(x,1.6,z,wb?0xe4e4ec:0x8a7a68,5,3);sfx(wb?'wood':'thud');if(c.hp<=0){G.g[k]=0;G.lg.remove(c.mesh);G.crack.delete(k);const cx=(k%G.W)*T+T/2,cz=Math.floor(k/G.W)*T+T/2;burst(cx,2,cz,wb?0xe8e8f0:0x8a7a68,wb?26:40,wb?4:7);sfx(wb?'wood':'crumble');if(p)pmsg(p,wb?'Web torn away!':'Wall broken!');drawMapBase();G.flowT=0}}}
 function breakAround(x,z,R,dmg,p){const i0=Math.floor((x-R)/T),i1=Math.floor((x+R)/T),j0=Math.floor((z-R)/T),j1=Math.floor((z+R)/T);for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){if(i<0||j<0||i>=G.W||j>=G.H)continue;const k=j*G.W+i,v=G.g[k];if((v===2||v===3)&&Math.hypot(i*T+T/2-x,j*T+T/2-z)<R+2)hitTile(k,dmg,p,i*T+T/2,j*T+T/2)}}
 
 // ---------- combat
@@ -776,7 +779,7 @@ function killEnemy(e,p){if(e.dead)return;e.dead=true;const D0=EDEF[e.type];if(D0
   banner('Death is destroyed!','Every monster falls. Stay clear of the generators and the way to the exit is quiet',3.5);for(const q of humans())rumble(q,500,1)}}
 function hurtGen(gn,d,p){if(gn.dead)return;gn.hp-=d;burst(gn.x,.8,gn.z,0xc8b8a0,4);if(gn.hp<=0){gn.dead=true;G.lg.remove(gn.mesh);burst(gn.x,.8,gn.z,0xe8e0c8,30,7);sfx('gen');if(p){p.score+=50;gainPower(p,3)}G.gensKilled=(G.gensKilled||0)+1;if((G.level===1&&!G.saidStrength)||G.gensKilled%3===0){G.saidStrength=true;voice('strength')}/* level 1's first generator, then every third one */G.gens=G.gens.filter(g=>!g.dead);drawMapBase()}}
 function openChest(c,p){if(c.open)return;c.open=true;if(p&&p.local)rumble(p,70,.35);G.lg.remove(c.mesh);burst(c.x,.6,c.z,0xd0a040,16);G.chests=G.chests.filter(x=>!x.open);const r=Math.random();
- if(r<.06&&!G.treasure){for(let k=0;k<6;k++)spawnEnemy('ghost',c.x+rf(-2,2),c.z+rf(-2,2));if(p)pmsg(p,'A trap! Ghosts burst out');sfx('hurt');return}
+ if(r<.06&&!G.treasure&&!G.lair){for(let k=0;k<6;k++)spawnEnemy('ghost',c.x+rf(-2,2),c.z+rf(-2,2));if(p)pmsg(p,'A trap! Ghosts burst out');sfx('hurt');return}
  const t=r<.45?'treasure':r<.68?'food':r<.78?'potion':r<.9?'charm':'key';addItem(t,c.x,c.z);if(r<.3)addItem('treasure',c.x+rf(-.5,.5),c.z+rf(-.5,.5));sfx('gold')}
 function hurtPlayer(p,amt){if(!p.alive||G.transT>0||G.over)return;if(p.buff==='ward'&&p.buffT>0)return;amt*=G.dmgScale;p.lastHit=G.time;p.hurt=Math.min(1,p.hurt+.45);
  if(p.shield>0){const s=Math.min(p.shield,amt);p.shield-=s;amt-=s}
@@ -809,7 +812,7 @@ function doDash(p){if(!p.alive||(p.cdD||0)>0||p.dash>0)return;const m=Math.hypot
   if(d<.6){pmsg(p,'No room to blink');return}burst(p.x,1.2,p.z,0xb39cff,28,4);ring(p.x,p.z,1.4,0xb39cff);p.x+=dx*d;p.z+=dz*d;burst(p.x,1.2,p.z,0xd0c0ff,28,4);ring(p.x,p.z,1.4,0xd0c0ff);sfx('magic');p.cdD=2.4;rumble(p,60,.3);return}
  p.dx=dx;p.dz=dz;p.dash=.22;p.dashSp=28*DASHK[p.hero];sfx('dash');p.cdD=p.hero==='elf'?1.8:2.4;rumble(p,60,.3)}
 function ability1(p){if(p.cd1>0)return;const H=p.H;
- if(p.hero==='barbarian'){const R=6.5+p.tier*.7;for(const e of G.enemies)if(!e.dead&&Math.hypot(e.x-p.x,e.z-p.z)<R)killEnemy(e,p);for(const g of G.gens.slice())if(Math.hypot(g.x-p.x,g.z-p.z)<R)hurtGen(g,10,p);for(const c of G.chests.slice())if(Math.hypot(c.x-p.x,c.z-p.z)<R)openChest(c,p);breakAround(p.x,p.z,R*.6,99,p);ring(p.x,p.z,R,0xffb060);burst(p.x,.3,p.z,0xa08060,40,9);p.shake=.5;p.anim2=1;sfx('slam');rumble(p,350,1)}
+ if(p.hero==='barbarian'){const R=6.5+p.tier*.7;for(const e of G.enemies)if(!e.dead&&Math.hypot(e.x-p.x,e.z-p.z)<R){if(EDEF[e.type].boss)hurtEnemy(e,e.max*.025/(BOSSMUL[p.hero]||1),p);else killEnemy(e,p)}for(const g of G.gens.slice())if(Math.hypot(g.x-p.x,g.z-p.z)<R)hurtGen(g,10,p);for(const c of G.chests.slice())if(Math.hypot(c.x-p.x,c.z-p.z)<R)openChest(c,p);breakAround(p.x,p.z,R*.6,99,p);ring(p.x,p.z,R,0xffb060);burst(p.x,.3,p.z,0xa08060,40,9);p.shake=.5;p.anim2=1;sfx('slam');rumble(p,350,1)}
  else if(p.hero==='elf'){const m=Math.hypot(p.mvx,p.mvz);const f=fwd(p);p.dx=m>.1?p.mvx/m:f.x;p.dz=m>.1?p.mvz/m:f.z;p.dash=.22;p.dashSp=28;sfx('dash')}
  else if(p.hero==='wizard'){if(p.mana<25){pmsg(p,'Need 25 magic to heal');return}p.mana-=25;for(const q of players){if(!q.alive||Math.hypot(q.x-p.x,q.z-p.z)>9)continue;q.hp=Math.min(q.max,q.hp+Math.max(60,Math.round(180*growth())));burst(q.x,1.2,q.z,0x60ff90,24,3);if(q!==p)pmsg(q,'Healed by the Wizard')}pmsg(p,'Heal!');sfx('heal');p.healAt=performance.now()}
  else{for(let k=0;k<16;k++)shoot(p,'knife',k/16*TAU,{speed:24+p.tier*4,dmg:2.5+p.tier*.6,pierce:1,life:.9,r:.55,knock:4,scale:1});p.anim=1;sfx('knife')}
@@ -833,18 +836,18 @@ function eat(p){if(p.pouch<=0){pmsg(p,'No stored food');return}if(p.hp>=p.max){p
 function updatePlayer(p,dt){
  const H=p.H;if(p.msgT>0){p.msgT-=dt;if(p.msgT<=0&&p.el)p.el.msg.style.opacity=0}
  p.hurt=Math.max(0,p.hurt-dt*1.8);p.anim=Math.max(0,p.anim-dt*4);p.anim2=Math.max(0,p.anim2-dt*3.2);p.shake=Math.max(0,p.shake-dt);p.draw=Math.min(1,p.draw+dt/(H.rate*.75));
- const vr=p.i===0&&!p.ai&&renderer.xr.isPresenting;
+ const vr=p.i===0&&!p.ai&&renderer.xr.isPresenting;iceTick(p,dt);
  if(!p.alive){syncPlayer(p,vr,dt);return}
  const client=G.net==='client';let inp;
  if(p.net){const m=p.netMe||{};inp={mx:0,mz:0,lx:0,ly:0,fire:!!m.f,a1:false,a2:false,pot:false,eat:false};if((m.fc|0)>(p.nc.fc|0)){p.fireLatch=true;p.nc.fc=m.fc|0}if(p.fireLatch&&p.cool<=0){inp.fire=true;p.fireLatch=false}
-  for(const [k,f] of [['a1','a1'],['a2','a2'],['pt','pot'],['ea','eat']]){const v=m[k]|0;if(v>p.nc[k]){inp[f]=true}p.nc[k]=v}
+  for(const [k,f] of [['a1','a1'],['a2','a2'],['pt','pot'],['ea','eat']]){const v=m[k]|0;if(v>p.nc[k]){inp[f]=true}p.nc[k]=v}if(p.pfz>0)icy(inp);
   if(m.s===G.seed&&typeof m.x==='number'){p.x=clamp(m.x,0,G.W*T);p.z=clamp(m.z,0,G.H*T);p.yaw=+m.y||0;p.aimYaw=typeof m.ay==='number'?m.ay:p.yaw;p.moving=m.mv?1:0;p.assist=!!m.as}else if(p.spawn){p.x=p.spawn.x;p.z=p.spawn.z}}
- else{inp=readInput(p,dt);if(inp.dash)doDash(p);p.yaw-=inp.lx;p.pitch=clamp(p.pitch-inp.ly,-1.2,1.2);p.sway+=(clamp(inp.lx*6,-.25,.25)-p.sway)*Math.min(1,dt*10)}
+ else{inp=readInput(p,dt);if(p.pfz>0)icy(inp);if(inp.dash)doDash(p);p.yaw-=inp.lx;p.pitch=clamp(p.pitch-inp.ly,-1.2,1.2);p.sway+=(clamp(inp.lx*6,-.25,.25)-p.sway)*Math.min(1,dt*10)}
  p.cool-=dt;p.cd1-=dt;p.cd2-=dt;p.cdD=(p.cdD||0)-dt;if(p.buffT>0){p.buffT-=dt;if(p.buffT<=0)p.buff=null}
  if(!p.net){
  let fx,fz;if(vr){p.cam.getWorldDirection(_v);_v.y=0;if(_v.lengthSq()<1e-4)_v.set(0,0,-1);_v.normalize();fx=_v.x;fz=_v.z}else{const f=fwd(p);fx=f.x;fz=f.z}
  const rx=-fz,rz=fx;let mx=fx*inp.mz+rx*inp.mx,mz=fz*inp.mz+rz*inp.mx;const ml=Math.hypot(mx,mz);if(ml>1){mx/=ml;mz/=ml}p.mvx=mx;p.mvz=mz;p.moving+=((ml>.1?1:0)-p.moving)*Math.min(1,dt*8);
- const sp=H.speed*(p.buff==='haste'&&p.buffT>0?1.45:1)*(p.blessT>0?1.3:1)*floodSlow();let vx=mx*sp,vz=mz*sp;
+ const sp=H.speed*(p.buff==='haste'&&p.buffT>0?1.45:1)*(p.blessT>0?1.3:1)*floodSlow()*(G.wet&&wetAt(p.x,p.z)?.82:1);let vx=mx*sp,vz=mz*sp;
  if(p.dash>0){p.dash-=dt;vx=p.dx*(p.dashSp||28);vz=p.dz*(p.dashSp||28);spark(p.x,1,p.z,0x9fffa0,.3)}
  const steps=Math.max(1,Math.ceil(Math.hypot(vx,vz)*dt/.35));
  for(let s=0;s<steps;s++){p.x+=vx*dt/steps;p.z+=vz*dt/steps;
@@ -905,9 +908,10 @@ function updateEnemies(dt){const W=G.W,E=G.enemies,wiz=players.filter(p=>p.hero=
    if(D0.lob&&(e.fire-=dt)<=0){e.fire=rf(2,3.2);if(n.d<16){const tt=1.1,vy=14*tt/2;G.rocks.push({x:e.x,y:1.4,z:e.z,vx:(n.p.x-e.x)/tt,vy,vz:(n.p.z-e.z)/tt,spin:0});sfx('lob')}}}
   const i=Math.floor(e.x/T),j=Math.floor(e.z/T);if(i>=0&&j>=0&&i<W&&j<G.H){for(let o=G.head[j*W+i];o>=0;o=G.nxt[o]){if(o===k)continue;const f=E[o];if(!f||f.dead)continue;const dx=e.x-f.x,dz2=e.z-f.z,d2=dx*dx+dz2*dz2;if(d2<.72&&d2>1e-6){const d=Math.sqrt(d2),pu=(.85-d)*.5;e.x+=dx/d*pu;e.z+=dz2/d*pu}}}
   collide(e,D0.r);
+  if(G.wet&&e.type==='spiderling'&&wetAt(e.x,e.z)&&!wetAt(ox,oz)){e.x=ox;e.z=oz}
   if(!e.pass&&!D0.death)for(const w of wiz){const dx=e.x-w.x,dz2=e.z-w.z,d=Math.hypot(dx,dz2);if(d<3.6&&d>1e-4){e.x=w.x+dx/d*3.6;e.z=w.z+dz2/d*3.6;collide(e,D0.r)}}
   e.moving+=((Math.hypot(e.x-ox,e.z-oz)>dt*.5?1:0)-e.moving)*Math.min(1,dt*8);
-  if(!(D0.water&&(e.hidden||G.time-(e.riseAt||-9)<1)))for(const p of players){if(!p.alive)continue;const dx=e.x-p.x,dz2=e.z-p.z,d=Math.hypot(dx,dz2),m=p.H.rad+D0.r;if(d>=m)continue;
+  if(!(D0.water&&(e.hidden||G.time-(e.riseAt||-9)<1)))for(const p of players){if(!p.alive)continue;if(G.wet&&e.type==='spiderling'&&wetAt(p.x,p.z))continue;const dx=e.x-p.x,dz2=e.z-p.z,d=Math.hypot(dx,dz2),m=p.H.rad+D0.r;if(d>=m)continue;
    if(D0.death){const am=70*dt;hurtPlayer(p,am/G.dmgScale);e.drained+=am;if(Math.random()<.3)spark(p.x,1.3,p.z,0xff2020,.4);sfx('drain');if(e.drained>=220){e.dead=true;burst(e.x,1.5,e.z,0x403848,20,3)}if(d>1e-4){e.x=p.x+dx/d*m;e.z=p.z+dz2/d*m}break}
    if(D0.kami){hurtPlayer(p,D0.touch);e.dead=true;burst(e.x,1.2,e.z,D0.burst,8);break}
    if(e.atk<=0){hurtPlayer(p,D0.touch);e.atk=.75}if(d>1e-4){e.x=p.x+dx/d*m;e.z=p.z+dz2/d*m}}
@@ -1015,7 +1019,7 @@ function hudTick(dt){if(!G||G.demo||!players.length||!G.lg)return;fpTick();const
   drawMini(e.mini,p)}
  const bm=document.querySelector('.bigmap');if(bm)drawMini(bm,null);bossBar();
  if(renderer.xr.isPresenting&&XR.hud)drawVRHud()}
-function bossFrac(){if(G.net==='client')return G.tsNet?G.tsNet[1]/1000:-1;const b=G.boss;return b&&!b.dead?clamp(b.hp/b.max,0,1):-1}
+function bossFrac(){if(G.net==='client')return G.tsNet?G.tsNet[1]/1000:-1;const b=G.boss;return b&&!b.dead&&G.tsAwake?clamp(b.hp/b.max,0,1):-1}
 function bossBar(){const f=bossFrac(),el=$('#bossbar');if(el){el.hidden=f<0||renderer.xr.isPresenting;if(f>=0)el.querySelector('span').style.transform=`scaleX(${f})`}
  if(XR.bossM){XR.bossM.visible=f>=0;if(f>=0){const x=XR.bossC.getContext('2d');x.clearRect(0,0,512,64);x.fillStyle='rgba(10,4,4,.65)';x.fillRect(0,0,512,64);x.fillStyle='#e8c0b0';x.font='bold 22px serif';x.textAlign='center';x.fillText('TROLL SPIDER',256,22);x.fillStyle='#3a0806';x.fillRect(16,32,480,22);x.fillStyle='#d8261a';x.fillRect(16,32,480*f,22);XR.bossM.material.map.needsUpdate=true}}}
 function banner(t,s,d){$('#bT').textContent=t;$('#bS').textContent=s||'';$('#banner').classList.add('show');G.bannerT=d||2}
@@ -1059,7 +1063,7 @@ function render(){renderer.shadowMap.needsUpdate=true;
  renderer.setScissorTest(false)}
 let last=performance.now();
 renderer.setAnimationLoop(()=>{const now=performance.now(),dt=Math.min(.05,(now-last)/1000);last=now;pollPads();
- if(G&&G.lg&&!G.demo&&!G.paused){poolTick(dt);floodTick(dt);tsTick(dt)}
+ if(G&&G.lg&&!G.demo&&!G.paused){poolTick(dt);floodTick(dt);tsTick(dt);if(G.wet)wetTick(dt)}
  if(G&&renderer.xr.isPresenting)vrMenuTick();
  if(G&&G.paused&&G.net==='host'&&!G.over)hostNet(dt);
  if(G&&(!G.paused||G.net==='client'))update(dt);pressed.clear();TOUCH.dx=TOUCH.dy=0;TOUCH.e={};mouse.dx=mouse.dy=0;mouse.rp=mouse.mp=false;
@@ -1073,7 +1077,7 @@ const NET={vis:'wifi',p2p:false,room:null,nr:null,mode:null,code:null,myId:'c'+M
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const b64=u8=>{let s='';for(let i=0;i<u8.length;i++)s+=String.fromCharCode(u8[i]);return btoa(s)};
 const unb64=s=>{try{const b=atob(s),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u}catch(e){return new Uint8Array(0)}};
-const ET=['ghost','grunt','demon','lobber','sorcerer','death','gargoyle','naga','eel','drowned','drownbrute','tspider','egg','spiderling'],PK=['axe','axe5','arrow','knife','knife5','bolt','fire','rock'],PSPD=[22,22,46,35,35,36,13,9],IT=['food','potion','charm','key','treasure'];
+const ET=['ghost','grunt','demon','lobber','sorcerer','death','gargoyle','naga','eel','drowned','drownbrute','tspider','egg','spiderling','gremlin'],PK=['axe','axe5','arrow','knife','knife5','bolt','fire','rock'],PSPD=[22,22,46,35,35,36,13,9],IT=['food','potion','charm','key','treasure'];
 const q11=v=>clamp(Math.round(v*8),0,2047),angQ=(a,n)=>((Math.round(a/TAU*n)%n)+n)%n;
 function pack(list,fn){const u=new Uint8Array(list.length*4),dv=new DataView(u.buffer);list.forEach((o,i)=>dv.setUint32(i*4,fn(o)>>>0));return b64(u)}
 function unpack(s,fn){const u=unb64(typeof s==='string'?s:''),dv=new DataView(u.buffer),out=[];for(let i=0;i+3<u.length;i+=4)out.push(fn(dv.getUint32(i)));return out}
@@ -1084,10 +1088,10 @@ function hostSnap(){const rem=players.filter(p=>p.net&&p.alive);let E=G.enemies.
  for(const f of G.eproj)if(!f.dead&&J.length<260)J.push([6,f.x,f.z,Math.atan2(f.vx,f.vz),0]);for(const r of G.rocks)if(!r.dead&&J.length<280)J.push([7,r.x,r.z,Math.atan2(r.vx,r.vz),0]);
  const pj=o=>q11(o[1])<<21|q11(o[2])<<10|o[0]<<7|angQ(o[3],64)<<1|(o[4]?1:0);
  const s={v:1,fh:G.flood?Math.round(G.flood.h*100):0,ps:G.paused?1:0,t:++G.tick,sd:G.seed,lv:G.level,tr:G.treasure?1:0,tm:Math.max(0,Math.ceil(G.timer||0)),ov:G.over?1:0,fl:Math.round(G.flash*10),
-  P:players.map(p=>[p.netId,p.hero,Math.round(p.x*10),Math.round(p.z*10),Math.round(p.yaw*100),Math.max(0,Math.ceil(p.hp)),Math.ceil(p.shield),Math.floor(p.mana),p.keys,p.potions,p.pouch,p.score,p.tier,p.alive?1:0,Math.round(p.anim*10),Math.round(Math.max(0,p.cd1)*10),p.buffT>0?['might','haste','ward'].indexOf(p.buff)+1:0,Math.ceil(Math.max(0,p.buffT)),p.kills,p.moving>.5?1:0,Math.round((p.spawn?p.spawn.x:p.x)*10),Math.round((p.spawn?p.spawn.z:p.z)*10),p.ai?1:0]),
+  P:players.map(p=>[p.netId,p.hero,Math.round(p.x*10),Math.round(p.z*10),Math.round(p.yaw*100),Math.max(0,Math.ceil(p.hp)),Math.ceil(p.shield),Math.floor(p.mana),p.keys,p.potions,p.pouch,p.score,p.tier,p.alive?1:0,Math.round(p.anim*10),Math.round(Math.max(0,p.cd1)*10),p.buffT>0?['might','haste','ward'].indexOf(p.buff)+1:0,Math.ceil(Math.max(0,p.buffT)),p.kills,p.moving>.5?1:0,Math.round((p.spawn?p.spawn.x:p.x)*10),Math.round((p.spawn?p.spawn.z:p.z)*10),p.ai?1:0,Math.round((p.pfz||0)*10)]),
   E:pack(E,packE),J:pack(J,pj),I:pack(G.items.filter(i=>!i.gone).slice(0,90),i=>q11(i.x)<<21|q11(i.z)<<10|Math.max(0,IT.indexOf(i.type))),
   Gn:G.gens.map(g=>g.id+'.'+Math.round(clamp(g.hp/g.max,0,1)*9)).join(','),C:G.chests.map(c=>c.id).join(','),
-  B:G.boss&&!G.boss.dead?[['idle','wind','slam','orbturn','orb','lay','roar','vanish','appear'].indexOf(G.boss.bs),Math.round(G.boss.hp/G.boss.max*1000),Math.round((G.boss.fade===undefined?1:G.boss.fade)*100),Math.round(Math.min(G.boss.bt,9)*100)]:0,
+  B:G.boss&&!G.boss.dead&&G.tsAwake?[['idle','wind','slam','orbturn','orb','lay','roar','vanish','appear'].indexOf(G.boss.bs),Math.round(G.boss.hp/G.boss.max*1000),Math.round((G.boss.fade===undefined?1:G.boss.fade)*100),Math.round(Math.min(G.boss.bt,9)*100)]:0,
   Ob:(G.orbs||[]).filter(f=>!f.dead).slice(0,30).map(f=>[Math.round(f.x*10),Math.round(f.z*10)]),Wv:(G.waves||[]).map(w=>[Math.round(w.x*10),Math.round(w.z*10),Math.round(w.dx*100),Math.round(w.dz*100),Math.round(w.d*10)]),Rm:G.remains||[],
   D:[...G.doorMesh.keys()].map(k=>k.toString(36)).join(','),K:[...G.crack.keys()].map(k=>k.toString(36)).join(','),F:G.fxq.splice(0,14)};
  while(JSON.stringify(s).length>3900&&E.length>20){E=E.slice(0,Math.floor(E.length*.8));s.E=pack(E,packE)}
@@ -1118,6 +1122,7 @@ async function joinGame(code,vr){if(!NET.room)return;const sess=null;unlockMusic
 function syncStats(p,a){const hp=a[5];if(a[8]>p.keys||a[9]>p.potions||a[10]>p.pouch||a[11]>p.score+0)rumble(p,40,.22);if(hp<p.hp-1){p.hurt=Math.min(1,p.hurt+.4);sfx('hurt');rumble(p,100,.5)}else if(hp>p.hp+60)pmsg(p,'Health +'+Math.round(hp-p.hp));
  if(a[8]>p.keys)pmsg(p,'Key: walk into a door');if(a[9]>p.potions)pmsg(p,'Potion');if(a[10]>p.pouch)pmsg(p,'Food stored for later');if(a[11]>p.score)sfx('gold');
  if(a[12]>p.tier&&a[12]<=5){p.tier=a[12];p.vm.setTier(p.tier);pmsg(p,'Upgraded: '+p.H.tiers[p.tier-1]+'!');sfx('up')}
+ {const fz=(a[23]|0)/10;if(fz>(p.pfz||0)+.5){p.pfz=fz;pmsg(p,'Frozen solid by his orb! 4 seconds');rumble(p,600,.9)}}
  const was=p.alive;p.hp=hp;p.shield=a[6];p.mana=a[7];p.keys=a[8];p.potions=a[9];p.pouch=a[10];p.score=a[11];p.alive=!!a[13];p.cd1=a[15]/10;p.buff=[null,'might','haste','ward'][a[16]]||null;p.buffT=a[17];p.kills=a[18];
  if(was&&!p.alive){say(p.H.name+' has fallen',true);rumble(p,500,1)}if(!was&&p.alive)p.body.root.visible=!renderer.xr.isPresenting}
 function applySnap(s){if(!s||typeof s!=='object')return;
@@ -1472,28 +1477,83 @@ void main(){vec4 t=texture2D(map,vUv);if(t.a<.4||op<.02)discard;gl_FragColor=vec
 function tsBill(w,h){const geo=new THREE.PlaneGeometry(w,h);geo.translate(0,h/2,0);const mat=new THREE.ShaderMaterial({uniforms:THREE.UniformsUtils.merge([THREE.UniformsLib.fog,{map:{value:null},op:{value:1},tint:{value:new THREE.Color(1,1,1)}}]),vertexShader:TSV,fragmentShader:TSFR,fog:true,transparent:true,side:THREE.DoubleSide});mat.uniforms.tint={value:new THREE.Color(1,1,1)};
  const m=new THREE.Mesh(geo,mat);m.frustumCulled=false;return m}
 function tsSetTex(m,n){const t=tsTex(n);if(m.material.uniforms.map.value!==t)m.material.uniforms.map.value=t}
-// the cave: a big rough cavern with a few rock pillars to hide behind, entered from the south
-function genLair(){const W=26,H=26,g=new Uint8Array(W*H).fill(1),cx=13,cy=13;
- for(let j=1;j<H-1;j++)for(let i=1;i<W-1;i++){const dx=i-cx,dy=j-cy,a=Math.atan2(dy,dx),R=9.6+Math.sin(a*3+1.3)*.9+Math.sin(a*5+.4)*.6;if(Math.hypot(dx,dy)<R)g[j*W+i]=0}
- for(let i=11;i<=15;i++)for(let j=20;j<=24;j++)g[j*W+i]=0;
+// level 30: a huge, pitch-dark warren of rooms and web-sealed doorways (some rooms flooded) wrapped around the Troll Spider's cave at its heart
+function genLair(){const W=62,H=62,g=new Uint8Array(W*H).fill(1),cx=31,cy=31,AR=10,arena=new Uint8Array(W*H),inRoom=new Uint8Array(W*H);
+ for(let j=1;j<H-1;j++)for(let i=1;i<W-1;i++){const dx=i-cx,dy=j-cy,a=Math.atan2(dy,dx),R=9.6+Math.sin(a*3+1.3)*.9+Math.sin(a*5+.4)*.6;if(Math.hypot(dx,dy)<R){g[j*W+i]=0;arena[j*W+i]=1}}
+ const rooms=[];let tries=0;
+ while(rooms.length<26&&tries++<4000){const w=4+rnd(7),h=4+rnd(7),x=2+rnd(W-w-4),y=2+rnd(H-h-4);if(x<cx+AR+3&&x+w>cx-AR-3&&y<cy+AR+3&&y+h>cy-AR-3)continue;if(rooms.some(r=>x<r.x+r.w+2&&x+w+2>r.x&&y<r.y+r.h+2&&y+h+2>r.y))continue;rooms.push({x,y,w,h,cx:x+(w>>1),cy:y+(h>>1)})}
+ for(const r of rooms)for(let j=r.y;j<r.y+r.h;j++)for(let i=r.x;i<r.x+r.w;i++){g[j*W+i]=0;inRoom[j*W+i]=1}
+ let si=0,sd=-1;rooms.forEach((r,k)=>{const d=Math.hypot(r.cx-cx,r.cy-cy);if(d>sd){sd=d;si=k}});
+ const chain=[rooms[si]],left=rooms.filter((r,k)=>k!==si);
+ while(left.length){const a=chain[chain.length-1];let bi=0,bd=1e9;left.forEach((r,k)=>{const d=Math.abs(r.cx-a.cx)+Math.abs(r.cy-a.cy);if(d<bd){bd=d;bi=k}});chain.push(left.splice(bi,1)[0])}
+ const dig=(i,j,wd)=>{for(let a=0;a<wd;a++)for(let b=0;b<wd;b++){const x=i+a,y=j+b;if(x>0&&y>0&&x<W-1&&y<H-1)g[y*W+x]=0}};
+ const corr=(a,b)=>{const wd=RNG()<.2?2:1;let x=a.cx,y=a.cy;if(RNG()<.5){while(x!==b.cx){dig(x,y,wd);x+=Math.sign(b.cx-x)}while(y!==b.cy){dig(x,y,wd);y+=Math.sign(b.cy-y)}}else{while(y!==b.cy){dig(x,y,wd);y+=Math.sign(b.cy-y)}while(x!==b.cx){dig(x,y,wd);x+=Math.sign(b.cx-x)}}dig(x,y,wd)};
+ for(let k=0;k<chain.length-1;k++)corr(chain[k],chain[k+1]);
+ const A={cx,cy};corr(chain[chain.length-1],A);
+ chain.slice(1,-1).sort((a,b)=>Math.hypot(a.cx-cx,a.cy-cy)-Math.hypot(b.cx-cx,b.cy-cy)).slice(0,2).forEach(r=>corr(r,A));
+ for(let k=0;k<5;k++){const a=chain[rnd(chain.length)],b=chain[rnd(chain.length)];if(a!==b)corr(a,b)}
+ // the cave's rock pillars go in last so no tunnel cuts through them
  for(const [a,r] of [[.8,6],[2.4,6.3],[3.9,5.8],[5.5,6.2]]){const pi=Math.round(cx+Math.cos(a)*r),pj=Math.round(cy+Math.sin(a)*r);for(const [di,dj] of [[0,0],[1,0],[0,1],[1,1]])g[(pj+dj)*W+pi+di]=1}
- const start={x:11,y:21,w:5,h:3,cx:13,cy:22},ex={x:12,y:12,w:3,h:3,cx:13,cy:13};return{W,H,g,start,ex,rooms:[start,{x:5,y:5,w:16,h:14,cx:13,cy:12},ex],secret:null,boss:true}}
+ // webs over the narrow doorways into rooms and into the cave
+ const open=k=>g[k]===0,room=k=>inRoom[k]||arena[k],webs=[];
+ for(let j=2;j<H-2;j++)for(let i=2;i<W-2;i++){const k=j*W+i;if(g[k]!==0||room(k))continue;
+  const h=g[k-W]===1&&g[k+W]===1&&open(k-1)&&open(k+1)&&(room(k-1)||room(k+1)),v=g[k-1]===1&&g[k+1]===1&&open(k-W)&&open(k+W)&&(room(k-W)||room(k+W));
+  if((h||v)&&!webs.some(w=>Math.abs(w[0]-k)===1||Math.abs(w[0]-k)===W)&&RNG()<.8)webs.push([k,h?1:0])}
+ for(const [k] of webs)g[k]=3;
+ // a few rooms stand in dark water
+ const wet=new Uint8Array(W*H),cand=chain.slice(2),wetRooms=[];for(let k=0;k<5&&cand.length;k++){const r=cand.splice(rnd(cand.length),1)[0];wetRooms.push(r);for(let j=r.y;j<r.y+r.h;j++)for(let i=r.x;i<r.x+r.w;i++)if(g[j*W+i]===0)wet[j*W+i]=1}
+ const start=chain[0],ex={x:cx-1,y:cy-1,w:3,h:3,cx,cy};
+ return{W,H,g,start,ex,rooms:chain,secret:null,boss:true,arena:{i:cx,j:cy,r:AR-.5},arenaMask:arena,webs,wet,wetRooms}}
+let WEBTEX=null,WETTEX=null;
+function webMesh(k,across,W){if(!WEBTEX){const c=document.createElement('canvas');c.width=256;c.height=320;const x=c.getContext('2d');x.clearRect(0,0,256,320);const ox=128+rf(-20,20),oy=150;
+  x.strokeStyle='rgba(235,235,242,.85)';x.lineWidth=2;const sp=[];for(let a=0;a<16;a++){const t=a/16*TAU+rf(-.1,.1),r=260;sp.push(t);x.beginPath();x.moveTo(ox,oy);x.lineTo(ox+Math.cos(t)*r,oy+Math.sin(t)*r);x.stroke()}
+  x.lineWidth=1.4;for(let r=12;r<240;r+=10+r*.08){x.beginPath();sp.forEach((t,n)=>{const rr=r*(1+Math.sin(n*1.7+r)*.06),px=ox+Math.cos(t)*rr,py=oy+Math.sin(t)*rr+r*.06;n?x.lineTo(px,py):x.moveTo(px,py)});x.closePath();x.stroke()}
+  for(let n=0;n<3;n++){const px=rf(40,216),py=rf(60,280);x.fillStyle='rgba(225,220,210,.9)';x.beginPath();x.ellipse(px,py,7,14,rf(-.4,.4),0,TAU);x.fill()}
+  WEBTEX=new THREE.CanvasTexture(c)}
+ const m=new THREE.Mesh(new THREE.PlaneGeometry(T,WALLH),new THREE.MeshStandardMaterial({map:WEBTEX,transparent:true,alphaTest:.08,side:THREE.DoubleSide,roughness:1,emissive:0x2a2a30,depthWrite:false}));
+ m.position.set((k%W)*T+T/2,WALLH/2,Math.floor(k/W)*T+T/2);if(across)m.rotation.y=PI/2;return m}
+function wetRooms(lg,L){if(!L.wetRooms||!L.wetRooms.length)return;G.wet=L.wet;G.wetRooms=L.wetRooms;
+ if(!WETTEX){const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');x.fillStyle='#163c46';x.fillRect(0,0,256,256);for(let i=0;i<120;i++){x.strokeStyle=`rgba(150,210,225,${.05+Math.random()*.12})`;x.lineWidth=1+Math.random()*2;x.beginPath();x.arc(Math.random()*256,Math.random()*256,5+Math.random()*22,Math.random()*3,Math.random()*3+2);x.stroke()}
+  WETTEX=new THREE.CanvasTexture(c);WETTEX.wrapS=WETTEX.wrapT=THREE.RepeatWrapping;if(WETTEX.repeat)WETTEX.repeat.set(3,3)}
+ for(const r of L.wetRooms){const m=new THREE.Mesh(new THREE.PlaneGeometry(r.w*T,r.h*T),new THREE.MeshStandardMaterial({map:WETTEX,color:0x5f9aa8,emissive:0x061a20,roughness:.12,metalness:.3,transparent:true,opacity:.72,depthWrite:false}));m.rotation.x=-PI/2;m.position.set((r.x+r.w/2)*T,.3,(r.y+r.h/2)*T);m.renderOrder=2;lg.add(m)}}
+function wetAt(x,z){const w=G.wet;if(!w)return false;const i=Math.floor(x/T),j=Math.floor(z/T);return i>=0&&j>=0&&i<G.W&&j<G.H&&w[j*G.W+i]===1}
+// drips from the roof, and splashing as you wade
+function wetTick(dt){if(WETTEX&&WETTEX.offset){WETTEX.offset.x=(G.time*.02)%1;WETTEX.offset.y=(G.time*.013)%1}const me=players.find(p=>p.local&&p.alive)||players[0];
+ for(const r of G.wetRooms){const x0=r.x*T,z0=r.y*T;if(me&&Math.hypot(me.x-x0-r.w*T/2,me.z-z0-r.h*T/2)>32)continue;
+  if(Math.random()<dt*r.w*r.h*.05&&G.parts.length<1300){const x=x0+Math.random()*r.w*T,z=z0+Math.random()*r.h*T;G.parts.push({x,y:WALLH-.3,z,vx:0,vy:-2,vz:0,life:.62,c:0xbfe8f4,g:true});burst(x0+Math.random()*r.w*T,.33,z0+Math.random()*r.h*T,0x9fd0dc,2,1.2)}}
+ for(const p of players)if(p.alive&&p.moving>.5&&wetAt(p.x,p.z)&&Math.random()<dt*5)burst(p.x+rf(-.3,.3),.35,p.z+rf(-.3,.3),0xcfefff,3,2)}
+// what waits in the dark: sleeping egg clutches, packs of baby spiders, the odd gremlin, and a skeleton under the water in each flooded room
+function lairCritters(L,cells){const R=Math.random,W=L.W,pick=a=>a[Math.floor(R()*a.length)],far=cells.filter(c=>Math.hypot(c[0]-L.start.cx,c[1]-L.start.cy)>9),dry=far.filter(c=>!L.wet[c[1]*W+c[0]]);if(!dry.length)return;
+ const at=c=>[c[0]*T+T/2+(R()-.5)*2.4,c[1]*T+T/2+(R()-.5)*2.4];
+ for(let k=0;k<15;k++){const c=pick(dry),n=2+Math.floor(R()*3);for(let m=0;m<n;m++){const a=R()*TAU,r=R()*1.7,x=c[0]*T+T/2+Math.cos(a)*r,z=c[1]*T+T/2+Math.sin(a)*r;if(blockedAt(x,z,.9))continue;const b=G.enemies.length;spawnEnemy('egg',x,z);const e=G.enemies[b];if(e){e.hp=e.max=30*enemyHpMul(G.level)/2.7;e.dorm=1;e.hatch=Infinity}}}
+ for(let k=0;k<11;k++){const c=pick(dry),n=3+Math.floor(R()*3);for(let m=0;m<n;m++){const p=at(c);if(!blockedAt(p[0],p[1],.5))spawnEnemy('spiderling',p[0],p[1])}}
+ for(let k=0;k<7;k++){const p=at(pick(dry));if(!blockedAt(p[0],p[1],.5))spawnEnemy('gremlin',p[0],p[1])}
+ for(const r of L.wetRooms){const b=G.enemies.length;spawnEnemy('drowned',(r.x+r.w/2)*T,(r.y+r.h/2)*T);const e=G.enemies[b];if(e){e.hidden=true;e.lurk=1;e.wait=.8}}}
+// frozen by an orb: you can look around, but you can't move, dash, shoot or use anything
+function icy(i){i.mx=i.mz=0;i.fire=i.a1=i.a2=i.dash=i.pot=i.eat=false}
+function iceTick(p,dt){if(p.pfz>0)p.pfz=Math.max(0,p.pfz-dt);if(!p.alive)p.pfz=0;if(!p.local||!p.cam)return;const on=p.pfz>0;
+ if(!p.ice){if(!on)return;const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');const gr=x.createRadialGradient(128,128,30,128,128,182);gr.addColorStop(0,'rgba(200,235,255,0.1)');gr.addColorStop(.6,'rgba(210,240,255,0.35)');gr.addColorStop(1,'rgba(235,250,255,0.95)');x.fillStyle=gr;x.fillRect(0,0,256,256);
+  x.strokeStyle='rgba(255,255,255,.75)';x.lineWidth=1.5;for(let n=0;n<40;n++){const a=Math.random()*TAU,r0=90+Math.random()*40;let px=128+Math.cos(a)*r0,py=128+Math.sin(a)*r0;x.beginPath();x.moveTo(px,py);for(let s=0;s<4;s++){px+=Math.cos(a+rf(-.6,.6))*14;py+=Math.sin(a+rf(-.6,.6))*14;x.lineTo(px,py)}x.stroke()}
+  p.ice=new THREE.Mesh(new THREE.PlaneGeometry(1.4,1.4),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,opacity:0,depthTest:false,depthWrite:false,fog:false}));p.ice.renderOrder=998;p.ice.position.set(0,0,-.3);p.ice.frustumCulled=false;p.cam.add(p.ice)}
+ const m=p.ice.material;m.opacity+=((on?Math.min(1,p.pfz*1.5):0)-m.opacity)*.25;p.ice.visible=m.opacity>.02}
 function lairDress(lg,W,H,g){const rock=new THREE.MeshStandardMaterial({color:0x2a2320,roughness:1});
  const cells=[];for(let j=0;j<H;j++)for(let i=0;i<W;i++)if(g[j*W+i]===0)cells.push([i,j]);
- const n=Math.min(260,cells.length*2),geo=new THREE.ConeGeometry(.5,1,7);geo.translate(0,-.5,0);const im=new THREE.InstancedMesh(geo,rock,n),mm=new THREE.Matrix4(),q=new THREE.Quaternion();
+ const n=Math.min(900,cells.length*2),geo=new THREE.ConeGeometry(.5,1,7);geo.translate(0,-.5,0);const im=new THREE.InstancedMesh(geo,rock,n),mm=new THREE.Matrix4(),q=new THREE.Quaternion();
  for(let k=0;k<n;k++){const c=cells[Math.floor(Math.random()*cells.length)],len=rf(.6,2.4),s=rf(.35,.9);mm.compose(new THREE.Vector3(c[0]*T+rf(.3,T-.3),WALLH,c[1]*T+rf(.3,T-.3)),q,new THREE.Vector3(s,len,s));im.setMatrixAt(k,mm)}
  im.count=n;im.castShadow=true;lg.add(im);
  // stalagmites hugging the walls
  const near=cells.filter(([i,j])=>[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>g[(j+b)*W+i+a]===1)),m2=new THREE.InstancedMesh(new THREE.ConeGeometry(.45,1,7).translate(0,.5,0),rock,Math.max(1,near.length));
  near.forEach((c,k)=>{const s=rf(.4,.9);mm.compose(new THREE.Vector3(c[0]*T+rf(.5,T-.5),0,c[1]*T+rf(.5,T-.5)),q,new THREE.Vector3(s,rf(.5,1.6),s));m2.setMatrixAt(k,mm)});m2.count=near.length;lg.add(m2);
  // old egg nests in webs along the walls
- for(let k=0;k<7&&near.length;k++){const c=near[Math.floor(Math.random()*near.length)],m=tsBill(2.6,1.45);tsSetTex(m,'egg_web');m.material.uniforms.tint.value.setRGB(.55,.5,.5);m.position.set(c[0]*T+T/2+rf(-1,1),0,c[1]*T+T/2+rf(-1,1));lg.add(m)}}
-function spawnBoss(){const n=Math.max(1,players.filter(p=>p.alive).length),hp=9000*(1+.7*(n-1));const before=G.enemies.length;spawnEnemy('tspider',13*T+T/2,13*T+T/2);const e=G.enemies[before];if(!e)return;
+ for(let k=0;k<18&&near.length;k++){const c=near[Math.floor(Math.random()*near.length)],m=tsBill(2.6,1.45);tsSetTex(m,'egg_web');m.material.uniforms.tint.value.setRGB(.55,.5,.5);m.position.set(c[0]*T+T/2+rf(-1,1),0,c[1]*T+T/2+rf(-1,1));lg.add(m)}}
+function spawnBoss(){const n=Math.max(1,players.filter(p=>p.alive).length),hp=9000*(1+.7*(n-1));const before=G.enemies.length;spawnEnemy('tspider',G.arena?G.arena.x:13*T+T/2,G.arena?G.arena.z:13*T+T/2);const e=G.enemies[before];if(!e)return;
  Object.assign(e,{hp,max:hp,rot:PI,bs:'idle',bt:0,cd:3,home:{x:e.x,z:e.z},lastLay:-6,lastBlink:0,rage:0,fade:1,atk:0});G.boss=e}
-function tsTarget(e){const al=players.filter(p=>p.alive);if(!al.length)return null;if(!e.tgt||!e.tgt.alive||Math.random()<.004){let b=null,bd=1e9;for(const p of al){const d=Math.hypot(p.x-e.x,p.z-e.z);if(d<bd){bd=d;b=p}}e.tgt=b}return e.tgt}
+function inArena(p,pad){const A=G.arena;return !A||Math.hypot(p.x-A.x,p.z-A.z)<A.r+(pad||0)}
+function tsTarget(e){const al=players.filter(p=>p.alive&&inArena(p,8));if(!al.length)return null;if(!e.tgt||!e.tgt.alive||Math.random()<.004){let b=null,bd=1e9;for(const p of al){const d=Math.hypot(p.x-e.x,p.z-e.z);if(d<bd){bd=d;b=p}}e.tgt=b}return e.tgt}
 function angTo(e,p){return Math.atan2(p.x-e.x,p.z-e.z)}
 function turnTo(e,a,sp,dt){let d=a-e.rot;d=Math.atan2(Math.sin(d),Math.cos(d));e.rot+=clamp(d,-sp*dt,sp*dt);return Math.abs(d)}
-function bossAI(e,dt){const p=tsTarget(e);e.bt+=dt;e.cd-=dt;const fx=Math.sin(e.rot),fz=Math.cos(e.rot),rage=e.rage,fast=1+rage*.25;
+function bossAI(e,dt){if(!G.tsAwake){if(!players.some(q=>q.alive&&inArena(q,-2)))return;G.tsAwake=true;e.bs='roar';e.bt=0;e.laid=1;sfx('drain');G.flash=Math.max(G.flash,.4);banner('The Troll Spider awakens!','Smash his eggs · Dodge his shockwave · His red orbs freeze you solid',3.5);for(const q of humans()){pmsg(q,'The Troll Spider wakes!');rumble(q,600,1)}}
+ const p=tsTarget(e);e.bt+=dt;e.cd-=dt;const fx=Math.sin(e.rot),fz=Math.cos(e.rot),rage=e.rage,fast=1+rage*.25;
  if(e.frz>0){e.frz-=dt;return}
  const hpF=e.hp/e.max;if((hpF<.66&&rage<1)||(hpF<.33&&rage<2)){e.rage++;e.bs='roar';e.bt=0;sfx('drain');for(const q of humans()){pmsg(q,'The Troll Spider roars! More eggs!');rumble(q,500,.8)}}
  if(!p)return;const d=Math.hypot(p.x-e.x,p.z-e.z),a=angTo(e,p);
@@ -1514,7 +1574,7 @@ function bossAI(e,dt){const p=tsTarget(e);e.bt+=dt;e.cd-=dt;const fx=Math.sin(e.
  case 'lay':if(e.bt>.6&&!e.laid){e.laid=1;tsLay(e,2+(Math.random()<.5?1:0))}if(e.bt>1.4){e.bs='idle';e.laid=0;e.cd=rf(1,1.8)/fast}break;
  case 'roar':if(e.bt>.9&&!e.laid){e.laid=1;tsLay(e,3,true)}if(e.bt>1.8){e.bs='idle';e.laid=0;e.cd=1}break;
  case 'vanish':{const t=e.bt;e.fade=t<.7?(Math.sin(t*40)>0?1:.15)*(1-t/.7):0;e.hidden=t>.45;
-  if(t>1.5){const q=players.filter(x=>x.alive);const v=q[Math.floor(Math.random()*q.length)]||p;const f=fwd(v);let ok=false;
+  if(t>1.5){const q=players.filter(x=>x.alive&&inArena(x,8));const v=q[Math.floor(Math.random()*q.length)]||p;const f=fwd(v);let ok=false;
    for(const k of [4.6,3.8,5.6,3.2])for(const s of [0,.6,-.6,1.2,-1.2]){if(ok)break;const c=Math.cos(s),sn=Math.sin(s),dx=f.x*c-f.z*sn,dz=f.x*sn+f.z*c,x=v.x+dx*k,z=v.z+dz*k;if(!blockedAt(x,z,1.8)){e.x=x;e.z=z;ok=true}}
    e.rot=angTo(e,v);e.tgt=v;e.home={x:e.x,z:e.z};e.bs='appear';e.bt=0;burst(e.x,1.5,e.z,0x301010,24,5);sfx('drain')}break}
  case 'appear':{const t=e.bt;e.hidden=false;e.fade=t<.5?(Math.sin(t*40)>0?1:.2)*Math.min(1,t/.5+.3):1;turnTo(e,a,2,dt);if(t>.5){e.fade=1;e.bs='wind';e.bt=0;e.quick=1}break}}}
@@ -1523,7 +1583,8 @@ function tsOrb(e,p){const dx=-Math.sin(e.rot),dz=-Math.cos(e.rot),x=e.x+dx*2.1,z
  (G.orbs||(G.orbs=[])).push({x,y:1.5,z,vx,vz,life:3});sfx('fireball')}
 function tsLay(e,n,around){for(let k=0;k<n;k++){for(let t=0;t<20;t++){let x,z;if(around){const a=Math.random()*TAU,r=rf(5,11);x=e.home.x+Math.cos(a)*r;z=e.home.z+Math.sin(a)*r}else{const s=rf(-1.1,1.1),r=rf(3.2,6),bx=-Math.sin(e.rot+s),bz=-Math.cos(e.rot+s);x=e.x+bx*r;z=e.z+bz*r}
   if(blockedAt(x,z,.9))continue;const before=G.enemies.length;spawnEnemy('egg',x,z);const g=G.enemies[before];if(g){g.hp=g.max=30*enemyHpMul(G.level)/2.7;g.hatch=G.time+rf(14,18);burst(x,.6,z,0xd09040,10,3)}break}}sfx('lob')}
-function eggAI(e,dt){if(G.time>=e.hatch){e.dead=true;tsRemain(e.x,e.z,'egg_hatched');burst(e.x,.8,e.z,0xd09040,16,4);sfx('kill');for(let k=0;k<3;k++){const a=Math.random()*TAU;spawnEnemy('spiderling',e.x+Math.cos(a)*.8,e.z+Math.sin(a)*.8)}}}
+function eggAI(e,dt){if(e.dorm){if((e.chk=(e.chk||0)-dt)>0)return;e.chk=.3;const n=nearest(e);if(n&&n.d<7.5&&los(e.x,e.z,n.p.x,n.p.z)){e.dorm=0;e.hatch=G.time+rf(3,5.5)}return}
+ if(G.time>=e.hatch){e.dead=true;tsRemain(e.x,e.z,'egg_hatched');burst(e.x,.8,e.z,0xd09040,16,4);sfx('kill');for(let k=0;k<3;k++){const a=Math.random()*TAU;spawnEnemy('spiderling',e.x+Math.cos(a)*.8,e.z+Math.sin(a)*.8)}}}
 function tsRemain(x,z,kind){const R=G.remains||(G.remains=[]);if(R.length<40)R.push([Math.round(x*10),Math.round(z*10),kind==='egg_hatched'?1:2])}
 function bossDown(e){G.exitLocked=false;if(G.exit&&G.exit.g)G.exit.g.visible=true;for(const o of G.enemies)if(!o.dead&&o!==e&&(o.type==='egg'||o.type==='spiderling')){o.dead=true;burst(o.x,1,o.z,EDEF[o.type].burst,6,4)}G.orbs=[];G.waves=[];G.flash=1;sfx('up');
  burst(e.x,2.2,e.z,0x803020,40,8);banner('The Troll Spider is dead!','The exit has opened in the middle of his lair',4);for(const q of humans())rumble(q,700,1)}
@@ -1535,7 +1596,7 @@ function tsTick(dt){const host=G.net!=='client';
  if(host&&G.waves)G.waves=G.waves.filter(w=>!w.dead);
  for(const f of G.orbs||[]){if(f.dead)continue;if(host){f.life-=dt;f.x+=f.vx*dt;f.z+=f.vz*dt;if(f.life<=0||blk(Math.floor(f.x/T),Math.floor(f.z/T))){f.dead=true;burst(f.x,f.y,f.z,0xff4020,8,2.5);continue}
    for(const w of players)if(w.hero==='wizard'&&w.alive&&Math.hypot(f.x-w.x,f.z-w.z)<3.6){f.dead=true;burst(f.x,f.y,f.z,0x9fd8ff,8,2)}
-   if(!f.dead)for(const p of players)if(p.alive&&Math.hypot(f.x-p.x,f.z-p.z)<p.H.rad+.45){hurtPlayer(p,28);f.dead=true;burst(f.x,f.y,f.z,0xff4020,12,3);break}}
+   if(!f.dead)for(const p of players)if(p.alive&&Math.hypot(f.x-p.x,f.z-p.z)<p.H.rad+.45){hurtPlayer(p,28);if(p.alive&&!(p.pfz>0)&&G.time>(p.pfzImm||0)){p.pfz=4;p.pfzImm=G.time+5.5;pmsg(p,'Frozen solid by his orb! 4 seconds');rumble(p,600,.9);burst(p.x,1.3,p.z,0xbfe8ff,18,3)}f.dead=true;burst(f.x,f.y,f.z,0xff4020,12,3);break}}
   if(Math.random()<.7)spark(f.x+rf(-.2,.2),f.y+rf(-.2,.2),f.z+rf(-.2,.2),Math.random()<.5?0xffffff:0xff5020,.35)}
  if(host&&G.orbs)G.orbs=G.orbs.filter(f=>!f.dead)}
 // drawing: the boss picks a picture from where you stand and what he is doing
@@ -1625,7 +1686,7 @@ function drawWater(e,t){if(!e.hidden)return false;const h=G.flood?G.flood.h:.3;
  if(Math.random()<.5)GL.spark.add(e.x+rf(-.6,.6),h+.04,e.z+rf(-.6,.6),.55,.8,.85);if(Math.random()<.06)ring(e.x,e.z,.6+Math.random()*.8,0x9fd8e8);return true}
 function waterAI(e,dt){const f=G.flood,n=nearest(e);
  if(e.type==='eel'){if(e.hidden){if(n&&n.d<4.5){e.hidden=false;surface(e)}}else if(n&&n.d>9.5&&G.time-(e.riseAt||0)>2.5){e.hidden=true;burst(e.x,(f?f.h:0)+.1,e.z,0x9fffc0,8,2)}return false}
- if(e.hidden){e.wait=(e.wait||1.3)-dt;if(e.wait<=0){e.hidden=false;surface(e)}return true}
+ if(e.hidden){if(e.lurk&&!(n&&n.d<6.5))return true;e.wait=(e.wait||1.3)-dt;if(e.wait<=0){e.hidden=false;surface(e)}return true}
  return G.time-(e.riseAt||-9)<1}
 function waterSpawn(f,dt){if(f.h<.35||G.deathCalm)return;const deep=clamp((f.h-.35)/(1.3-.35),0,1),rate=(.3+2.4*Math.pow(deep,1.4))*(1+Math.max(0,G.level-22)*.03);
  if(Math.random()>rate*dt)return;let wm=0;for(const e of G.enemies)if(!e.dead&&EDEF[e.type].water)wm++;if(wm>=18+deep*40||G.enemies.length>=G.cap)return;
