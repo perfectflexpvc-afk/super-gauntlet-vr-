@@ -299,7 +299,7 @@ const POOLS={
 const D=new THREE.Object3D();D.rotation.order='YXZ';const TC=new THREE.Color();
 
 // ---------- sound
-const BUILD='20261127092129',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
+const BUILD='20261127092647',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
 let AC=null,musicOn=true,musicT=0,step=0,nb=null;const lastS={};
 function initAudio(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const b=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;nb=b}if(AC.state==='suspended')AC.resume()}catch(e){AC=null}}
 function tone(f,d,type,v,f2,at){if(!AC)return;const t=at||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
@@ -1235,7 +1235,10 @@ function menuMsg(t){$('#menuMsg').textContent=t}
 function startGame(vr){let act=slots.filter(s=>s.ctrl!=='off').map(s=>({hero:s.hero,ctrl:s.ctrl}));
  if(!act.some(a=>a.ctrl!=='ai')){if(vr)act.unshift({hero:slots[0].hero,ctrl:'km'});else{menuMsg('At least one player needs real controls (keyboard or controller). The others can be computer allies.');return}}
  act=act.filter(a=>a.ctrl!=='ai').concat(act.filter(a=>a.ctrl==='ai'));
- menuMsg('');initAudio();unlockMusic();teardown();G=newState();players=act.map((s,i)=>makePlayer(s.hero,s.ctrl,i));applyQuality();buildLevel();buildHud();$('#menu').hidden=true;$('#timer').hidden=true;
+ menuMsg('');initAudio();unlockMusic();teardown();G=newState();players=act.map((s,i)=>makePlayer(s.hero,s.ctrl,i));
+ // testing: start deeper in, with the weapon power you'd have earned by then
+ {const q=+(new URLSearchParams(location.search).get('level'))||0,sel=+(($('#startLv')||{}).value)||1,sl=clamp(Math.round(q||sel),1,99);if(sl>1){G.level=sl;const pw=sl>=25?2000:sl>=20?1800:sl>=10?1050:sl>=7?420:0;for(const p of players){p.power=pw;p.tier=tierOf(pw);p.vm.setTier(p.tier)}}}
+ applyQuality();buildLevel();buildHud();$('#menu').hidden=true;$('#timer').hidden=true;
  if(!vr&&players[0].ctrl==='km')lockPointer();startHosting();showTouch();const hn=humans().map(p=>p.H.name),an=players.filter(p=>p.ai).map(p=>p.H.name);say('Welcome, '+hn.join(' and ')+(an.length?'. Your allies: '+an.join(' and '):'')+'. Level 1.',true)}
 function quitWarning(){const others=players.filter(q=>q.net).length;if(NET.mode==='host'&&others)return'You are the host. Quitting ends the game for everyone ('+others+(others>1?' other players':' other player')+').';if(NET.mode==='client')return'You will leave this game. The others keep playing.';return'Your progress in this dungeon will be lost.'}
 function toMenu(){$('#quitAsk').hidden=true;$('#vrReady').hidden=true;NET.wantVR=false;const ri=$('#roomInfo');if(ri){ri.hidden=true;ri.innerHTML=''}if(NET.nr){try{const r=NET.nr.leave();if(r&&r.catch)r.catch(()=>{})}catch(e){}NET.nr=null}NET.mode=null;advertise();setTimeout(prepRoom,300);$('#over h2').textContent='Game over';if(document.pointerLockElement)document.exitPointerLock();if(renderer.xr.isPresenting){try{renderer.xr.getSession().end()}catch(e){}}teardown();G=newState();G.demo=true;buildLevel();$('#pause').hidden=true;$('#over').hidden=true;$('#menu').hidden=false;$('#banner').classList.remove('show');renderSlots();renderLobby();showTouch();$('#startBtn').focus()}
