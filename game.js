@@ -300,7 +300,7 @@ const POOLS={
 const D=new THREE.Object3D();D.rotation.order='YXZ';const TC=new THREE.Color();
 
 // ---------- sound
-const BUILD='20261127120023',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
+const BUILD='20261127120307',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
 let AC=null,musicOn=true,musicT=0,step=0,nb=null;const lastS={};
 function initAudio(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const b=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;nb=b}if(AC.state==='suspended')AC.resume()}catch(e){AC=null}}
 function tone(f,d,type,v,f2,at){if(!AC)return;const t=at||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
@@ -1598,9 +1598,11 @@ function setSkyEnv(on){if(G.envM===on)return;if(G.envM===undefined&&!on){G.envM=
  if(G.market)G.market.mg.visible=on;HEMI.intensity=on?1.25:E.h;scene.fog.density=on?.012:E.fd;scene.fog.color.setHex(on?0xcfe2f6:E.fc);scene.background.setHex(on?0x9cc4ea:E.bg);if(HEMI.color&&HEMI.color.setHex)HEMI.color.setHex(on?0xfff6e6:E.hc)}
 function marketTick(dt){const t=G.time,M=G.market,host=G.net!=='client';
  for(const P of G.portals){P.glow.material.opacity=.45+Math.sin(t*2.4)*.15;P.light.intensity=1.3+Math.sin(t*3.1)*.3;if(Math.random()<dt*6)spark(P.x+P.nx*.3+rf(-1.2,1.2)*Math.abs(P.nz)+(Math.abs(P.nx)?0:0),rf(.4,3.2),P.z+P.nz*.3+rf(-1.2,1.2)*Math.abs(P.nx),0xfff0b0,.8)}
- for(const p of players){if(!p.alive)continue;if(p.portalCd>0){p.portalCd-=dt;continue}if(!p.local)continue;
+ // the angel's doorway takes you up to the market; the cloud doorway carries everyone on to the next level
+ for(const p of players){if(!p.alive)continue;if(p.portalCd>0){p.portalCd-=dt;continue}
   for(const P of G.portals){if(Math.hypot(p.x-(P.x+P.nx*.7),p.z-(P.z+P.nz*.7))>1.3)continue;
-   if(P.to==='market'){tele(p,M.spawn.x+(p.i%2?1.2:-1.2),M.spawn.z,M.spawn.yaw);pmsg(p,'The market of the heavens')}else{const A=G.portals[0];tele(p,A.back.x,A.back.z,A.back.yaw);pmsg(p,'Back to the dungeon')}break}}
+   if(P.to==='market'){if(p.local){tele(p,M.spawn.x+(p.i%2?1.2:-1.2),M.spawn.z,M.spawn.yaw);pmsg(p,'The market of the heavens')}}
+   else if(G.net!=='client'&&!p.ai&&G.transT<=0){burst(P.x,1.6,P.z,0xfff0c0,30,4);exitReached()}break}}
  if(!M)return;
  const me=players.find(p=>p.local)||players[0];setSkyEnv(!!me&&inMarket(me));
  // the merchant turns to whoever is looking
