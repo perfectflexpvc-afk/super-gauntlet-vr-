@@ -23,6 +23,9 @@ const HK=Object.keys(HEROES);
 const TIERP=[0,420,1050,1800,2700];
 const EDEF={
  ghost:{hp:2,speed:3.4,touch:18,pts:10,burst:0xbfd0ff,r:.45,kami:true,eye:[.5,.95,1],ey:1.6,ez:.32,ex:.09,gen:0x7fd8ff},
+ tspider:{hp:9000,speed:0,touch:25,pts:5000,burst:0x803020,r:2.2,boss:true,eye:[1,.1,.1],ey:3.4,ez:.3,ex:.1,gen:0xff2020},
+ egg:{hp:30,speed:0,touch:0,pts:25,burst:0x9a8060,r:.75,egg:true,eye:[0,0,0],ey:0,ez:0,ex:0,gen:0xd09040},
+ spiderling:{hp:4,speed:5.6,touch:10,pts:15,burst:0x503020,r:.5,eye:[1,.1,.1],ey:.7,ez:.45,ex:.08,gen:0xff2020},
  grunt:{hp:5,speed:3.1,touch:12,pts:20,burst:0x8fa040,r:.5,eye:[1,.2,.1],ey:1.82,ez:.3,ex:.12,gen:0x9fe060},
  demon:{hp:7,speed:2.7,touch:14,pts:30,burst:0xff5030,r:.5,shoots:true,eye:[1,.85,.2],ey:2.1,ez:.3,ex:.13,gen:0xff7030},
  lobber:{hp:4,speed:2.8,touch:6,pts:40,burst:0xb08850,r:.42,lob:true,eye:[1,.6,.1],ey:1.18,ez:.27,ex:.08,gen:0xffb040},
@@ -51,7 +54,7 @@ renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;rende
 renderer.setSize(innerWidth,innerHeight);renderer.xr.enabled=true;
 $('#stage').appendChild(renderer.domElement);
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x0b0705);scene.fog=new THREE.FogExp2(0x0b0705,.034);
-scene.add(new THREE.HemisphereLight(0x8a6e5a,0x1a100a,.55));
+const HEMI=new THREE.HemisphereLight(0x8a6e5a,0x1a100a,.55);scene.add(HEMI);
 const menuCam=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,.05,120);scene.add(menuCam);
 const _v=new THREE.Vector3(),_v2=new THREE.Vector3(),_q=new THREE.Quaternion(),_up=new THREE.Vector3(0,1,0);
 const lin=h=>new THREE.Color(h).convertSRGBToLinear();
@@ -296,7 +299,7 @@ const POOLS={
 const D=new THREE.Object3D();D.rotation.order='YXZ';const TC=new THREE.Color();
 
 // ---------- sound
-const BUILD='20261126142119',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
+const BUILD='20261127092129',V=u=>u+(u.indexOf('?')<0?'?':'&')+'v='+BUILD;
 let AC=null,musicOn=true,musicT=0,step=0,nb=null;const lastS={};
 function initAudio(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const b=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;nb=b}if(AC.state==='suspended')AC.resume()}catch(e){AC=null}}
 function tone(f,d,type,v,f2,at){if(!AC)return;const t=at||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
@@ -336,7 +339,7 @@ function menuLoopTick(){if(!AC)return;const want=musicOn&&BOOTDONE&&!$('#menu').
  if(want&&MENU.buf&&!MENU.src){if(!MENU.g){MENU.g=AC.createGain();MENU.g.gain.value=0;MENU.g.connect(AC.destination)}const s=AC.createBufferSource();s.buffer=MENU.buf;s.loop=true;s.loopStart=3.0;s.loopEnd=MENU.buf.duration;s.connect(MENU.g);s.start();MENU.src=s}
  if(MENU.g){const t=want?.1375:0;MENU.g.gain.value+=(t-MENU.g.gain.value)*(want?.04:.08);if(!want&&MENU.src&&MENU.g.gain.value<.01){try{MENU.src.stop()}catch(e){}MENU.src=null}}}
 function music(){menuLoopTick();const want=musicOn&&G&&!G.demo&&!G.over&&!G.paused&&!!G.lg;if(!want){if(!BGM.paused)BGM.pause();return}
- musicMix();voPreload();const src=G.pools&&G.pools.length?ANGEL_SONG:G.flood?'music/flooded-dungeon.mp3':G.treasure?TREASURE_SONG:G.level>15?'music/dig-down.mp3':ROT[(G.level-1)%ROT.length];if(src!==bgmSrc){bgmSrc=src;BGM.src=V(src);bgmT=-9999}
+ musicMix();voPreload();const src=G.pools&&G.pools.length?ANGEL_SONG:G.flood?'music/flooded-dungeon.mp3':G.treasure?TREASURE_SONG:G.lair?'music/troll-spider-lair.mp3':G.level>15?'music/dig-down.mp3':ROT[(G.level-1)%ROT.length];if(src!==bgmSrc){bgmSrc=src;BGM.src=V(src);bgmT=-9999}
  if(BGM.paused&&performance.now()-bgmT>1500){bgmT=performance.now();try{const r=BGM.play();if(r&&r.catch)r.catch(()=>{})}catch(e){}}}
 function unlockMusic(){try{bgmSrc=SONGS[0];BGM.src=V(SONGS[0]);const r=BGM.play();if(r&&r.then)r.then(()=>{if(!G||G.demo)BGM.pause()}).catch(()=>{})}catch(e){}}
 let sayT=0;function say(t,force){const n=performance.now();if(!force&&n-sayT<2500)return;sayT=n;try{const u=new SpeechSynthesisUtterance(t);u.rate=.9;u.pitch=.5;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
@@ -385,8 +388,8 @@ function buildLevel(){
  if(G.lg)scene.remove(G.lg);
  const lg=G.lg=new THREE.Group();scene.add(lg);
  if(G.net!=='client')G.seed=(Math.random()*2e9)|0;RNG=mulberry(G.seed);G.genId=0;G.chestId=0;
- const tr=G.treasure,lv=G.level,L=genLevel(lv,tr),W=L.W,H=L.H,g=L.g;
- Object.assign(G,{W,H,g,enemies:[],proj:[],eproj:[],rocks:[],items:[],gens:[],chests:[],parts:[],fx:[],sconces:[],doorMesh:new Map(),doorHp:new Map(),crack:new Map(),flood:null,deathCalm:false,pools:[],secret:L.secret||null,secretOpen:false,transT:0,flowT:0,lightT:0});
+ const tr=G.treasure,lv=G.level,L=(lv===30&&!tr)?genLair():genLevel(lv,tr),W=L.W,H=L.H,g=L.g;
+ Object.assign(G,{W,H,g,enemies:[],proj:[],eproj:[],rocks:[],items:[],gens:[],chests:[],parts:[],fx:[],sconces:[],doorMesh:new Map(),doorHp:new Map(),crack:new Map(),flood:null,deathCalm:false,boss:null,tsSeen:0,waves:[],orbs:[],remains:[],exitLocked:false,tsNet:null,tsOrb:null,tsRem:null,pools:[],secret:L.secret||null,secretOpen:false,transT:0,flowT:0,lightT:0});
  G.dist=new Uint16Array(W*H);G.hdist=new Uint16Array(W*H);G.q=new Int32Array(W*H);G.head=new Int32Array(W*H);
  const isWall=k=>g[k]===1,mm=new THREE.Matrix4(),qq=new THREE.Quaternion(),one=new THREE.Vector3(1,1,1);
  const vis=[],faces=[];for(let j=0;j<H;j++)for(let i=0;i<W;i++){const k=j*W+i;if(!isWall(k))continue;let near=false;for(const [a,b] of N8){const x=i+a,y=j+b;if(x>=0&&y>=0&&x<W&&y<H&&!isWall(y*W+x)){near=true;if((!a||!b)&&g[y*W+x]===0)faces.push([i,j,a,b])}}if(near)vis.push([i,j])}
@@ -409,7 +412,9 @@ function buildLevel(){
  const disc=new THREE.Mesh(new THREE.CircleGeometry(1.65,40),ADD({map:swirl,color:0x60ff90,side:THREE.DoubleSide}));disc.rotation.x=-PI/2;disc.position.y=.24;exg.add(disc);
  const beam=new THREE.Mesh(Cy(1.3,1.65,WALLH,24,true),ADD({color:0x30ff70,opacity:.16,side:THREE.DoubleSide}));beam.position.y=WALLH/2;exg.add(beam);
  const xl=new THREE.PointLight(0x50ff90,1.6,16,2);xl.position.y=1.5;exg.add(xl);
- G.exit={x:L.ex.cx*T+T/2,z:L.ex.cy*T+T/2,beam,disc};exg.position.set(G.exit.x,0,G.exit.z);lg.add(exg);
+ G.exit={x:L.ex.cx*T+T/2,z:L.ex.cy*T+T/2,beam,disc,g:exg};exg.position.set(G.exit.x,0,G.exit.z);lg.add(exg);
+ G.lair=!!L.boss;if(L.boss){G.exitLocked=true;exg.visible=false;lairDress(lg,W,H,g)}
+ HEMI.intensity=L.boss?.16:.55;scene.fog.density=L.boss?.055:.034;scene.fog.color.setHex(L.boss?0x040202:0x0b0705);scene.background.setHex(L.boss?0x040202:0x0b0705);if(L.boss)G.sconces.length=Math.min(G.sconces.length,3);
  const inR=(c,r)=>c[0]>=r.x&&c[0]<r.x+r.w&&c[1]>=r.y&&c[1]<r.y+r.h;
  const cells=[];for(let j=0;j<H;j++)for(let i=0;i<W;i++)if(g[j*W+i]===0&&!inR([i,j],L.start)&&!(i===L.ex.cx&&j===L.ex.cy)&&!(L.secret&&inR([i,j],{x:L.secret.x,y:L.secret.y,w:3,h:3})))cells.push([i,j]);
  const roomCells=cells.filter(c=>L.rooms.slice(1).some(r=>inR(c,r)&&(tr||r!==L.ex)));
@@ -419,6 +424,7 @@ function buildLevel(){
  const sx=L.start.cx*T+T/2,sz=L.start.cy*T+T/2;G.start={x:sx,z:sz};
  const put=(type,n,arr)=>{for(let k=0;k<n;k++){const p=wc(take(arr||cells));addItem(type,p[0],p[1])}};
  if(tr){put('treasure',34,roomCells.length?roomCells:cells);put('food',3);put('charm',2);put('potion',2);put('key',1);for(let k=0;k<8;k++){const p=wc(take(cells));addChest(p[0],p[1])}G.timer=106;if(!G.demo)voice('treasure')}
+ else if(L.boss){put('food',6);put('potion',3);put('charm',1);if(G.net!=='client')spawnBoss()}
  else{
   // monster schedule: only ghosts and green grunts for levels 1-8, then one new kind a level; snake trolls at 15, fire devils at 20, Death at 25
   const types=['ghost','grunt'];for(const [L,t] of [[9,'gargoyle'],[10,'lobber'],[11,'sorcerer'],[15,'naga'],[20,'demon']])if(lv>=L)types.push(t);
@@ -440,6 +446,7 @@ function buildLevel(){
  G.cap=tr?0:Math.min(130+lv*30,380);G.dmgScale=1+(lv-1)*.1;G.spd=1+Math.min(lv,12)*.03;
  G.embers=[];drawMapBase();assignLights();
  if(!G.demo){if(tr){banner('Treasure Room','Grab the gold and reach the exit in 1:46',3)}
+  else if(L.boss){banner('Level 30 · The Troll Spider’s Lair','Smash his eggs before they hatch · Kill him to open the exit',4);if(G.time>2)say('Level 30. The Troll Spider.',true)}
   else{banner('Level '+lv,lv===1?'Find the green portal of the exit':lv===25?'Beware: Death walks these halls':'The horde grows stronger',2.5);if(G.time>2)say(lv===25?'Level 25. Beware of Death.':'Level '+lv,true)}}
 }
 function addItem(type,x,z){const m=new THREE.Mesh(ITEMGEO[type],IMAT[type]);m.position.set(x,0,z);m.castShadow=true;G.lg.add(m);G.items.push({type,x,z,mesh:m,ph:Math.random()*6})}
@@ -459,7 +466,7 @@ function drawMapBase(){const c=G.mapC||(G.mapC=document.createElement('canvas'))
  const s=G.secret;if(s){if(G.g[s.k]!==0){x.fillStyle='#2a1d14';x.fillRect(s.x,s.y,3,3);x.fillRect(s.k%G.W,Math.floor(s.k/G.W),1,1)}else{x.fillStyle='#7fe0ff';x.fillRect(s.cx,s.cy,1,1)}}}
 function drawMini(cv,p){const c=cv.getContext('2d'),S=cv.width,k=S/(Math.max(G.W,G.H)*T);c.clearRect(0,0,S,S);c.imageSmoothingEnabled=false;c.drawImage(G.mapC,0,0,G.W*T*k,G.H*T*k);
  c.fillStyle='#ff4030';for(const g of G.gens)c.fillRect(g.x*k-2,g.z*k-2,4,4);
- c.fillStyle='#40ff80';c.beginPath();c.arc(G.exit.x*k,G.exit.z*k,4,0,TAU);c.fill();
+ if(!G.exitLocked){c.fillStyle='#40ff80';c.beginPath();c.arc(G.exit.x*k,G.exit.z*k,4,0,TAU);c.fill()}
  for(const q of players){if(!q.alive)continue;c.fillStyle=q.H.css;c.beginPath();c.arc(q.x*k,q.z*k,q===p?3.6:2.6,0,TAU);c.fill();if(q.ai){c.strokeStyle='#fff';c.lineWidth=1;c.stroke()}}
  if(p){c.strokeStyle='#fff';c.lineWidth=1.5;c.beginPath();c.moveTo(p.x*k,p.z*k);c.lineTo(p.x*k-Math.sin(p.yaw)*9,p.z*k-Math.cos(p.yaw)*9);c.stroke()}}
 
@@ -631,7 +638,7 @@ cam.getWorldPosition(_cp);for(const p of players){const b=p.body;if(!b.bb||!b.bb
  const mat=b.atkReady&&p.anim>.2?b.bbAtkMat:b.bbMat;if(b.bb.material!==mat)b.bb.material=mat;if(mat.map)mat.map.offset.x=idx/8}}
 
 // ---------- your monster sheets, drawn as camera-facing sprites (front, 3/4 and side views)
-const MSPR={ghost:{h:2.6,f:1},grunt:{h:2.55},demon:{h:3.0,f:1},lobber:{h:1.9,f:1},sorcerer:{h:2.75},death:{h:3.15,f:1},gargoyle:{h:2.85,f:1},naga:{h:2.6},eel:{h:1.2,w:2.4},drowned:{h:2.6},drownbrute:{h:2.75},knife:{h:.62,p:1},knife5:{h:.7,p:1}};
+const MSPR={ghost:{h:2.6,f:1},grunt:{h:2.55},demon:{h:3.0,f:1},lobber:{h:1.9,f:1},sorcerer:{h:2.75},death:{h:3.15,f:1},gargoyle:{h:2.85,f:1},naga:{h:2.6},eel:{h:1.2,w:2.4},drowned:{h:2.6},drownbrute:{h:2.75},knife:{h:.62,p:1},knife5:{h:.7,p:1},spiderling:{h:2.4}};
 const BBV=`attribute float iYaw;attribute vec3 iTint;varying vec2 vUv;varying vec3 vTint;
 #include <fog_pars_vertex>
 void main(){vec3 c=(modelMatrix*instanceMatrix*vec4(0.,0.,0.,1.)).xyz;vec3 to=cameraPosition-c;to.y=0.;vec3 u=to/max(length(to),.001);vec3 r=vec3(u.z,0.,-u.x);
@@ -759,9 +766,10 @@ function breakAround(x,z,R,dmg,p){const i0=Math.floor((x-R)/T),i1=Math.floor((x+
 
 // ---------- combat
 function hurtEnemy(e,dmg,p,kx,kz,stun){if(e.dead)return;const D0=EDEF[e.type];if(D0.death){sfx('clang');burst(e.x,1.5,e.z,0xc0c0c0,3,2);return}if(e.hidden)return;
+ if(D0.boss){if(p)dmg*=BOSSMUL[p.hero]||1;kx=undefined;stun=0}
  if(e.stone&&e.frz>0){burst(e.x,1.2,e.z,0x9a9a9a,14,5);killEnemy(e,p);return}
- if(p&&p.stone&&Math.random()<.12*p.stone){e.frz=4;e.stone=1;burst(e.x,1.2,e.z,0xb0b0b0,8,3);return}if(p&&p.buff==='might'&&p.buffT>0)dmg*=2;e.hp-=dmg;e.flash=.12;if(kx!==undefined){e.kx=kx;e.kz=kz}if(stun)e.stun=Math.max(e.stun,stun);sfx('hit');if(e.hp<=0)killEnemy(e,p)}
-function killEnemy(e,p){if(e.dead)return;e.dead=true;const D0=EDEF[e.type];burst(e.x,1.2,e.z,D0.burst,12,5);sfx('kill');
+ if(p&&p.stone&&!D0.boss&&!D0.egg&&Math.random()<.12*p.stone){e.frz=4;e.stone=1;burst(e.x,1.2,e.z,0xb0b0b0,8,3);return}if(p&&p.buff==='might'&&p.buffT>0)dmg*=2;e.hp-=dmg;e.flash=.12;if(kx!==undefined){e.kx=kx;e.kz=kz}if(stun)e.stun=Math.max(e.stun,stun);sfx('hit');if(e.hp<=0)killEnemy(e,p)}
+function killEnemy(e,p){if(e.dead)return;e.dead=true;const D0=EDEF[e.type];if(D0.egg)tsRemain(e.x,e.z,'egg_smashed');if(D0.boss)bossDown(e);burst(e.x,1.2,e.z,D0.burst,12,5);sfx('kill');
  if(p){p.score+=D0.pts;p.kills++;gainPower(p,D0.death?20:1);if(D0.death)pmsg(p,'Death destroyed! +1000')}for(const w of players)if(w.hero==='wizard'&&w.alive)w.mana=Math.min(100,w.mana+(w===p?4:1));
  // killing Death silences the whole level: every monster on the map falls at once, and generators only wake again if you walk right up to them
  if(D0.death&&p&&!G.deathCalm){G.deathCalm=true;for(const o of G.enemies)if(!o.dead){o.dead=true;burst(o.x,1.2,o.z,EDEF[o.type].burst,6,4)}G.flash=1;sfx('potion');
@@ -812,11 +820,11 @@ function ability2(p){if(p.hero!=='wizard'||p.cd2>0)return;p.cd2=.5;p.anim2=1;p.s
   hits.sort((a,b)=>a[0]-b[0]);for(const [d,e,dx,dz2] of hits.slice(0,maxHit))hurtEnemy(e,d<3.4?dmg+wave:wave,p,dx/d*kb,dz2/d*kb,.5+t*.1);
   const cx=p.x+f.x*2.4,cz=p.z+f.z*2.4;ring(cx,cz,1.2+t*.35,t>=3?0xb39cff:0x9fd8ff);burst(cx,.3,cz,t>=3?0xb39cff:0xbfe8ff,14+t*6,3+t);p.shake=Math.max(p.shake,.15+t*.04);rumble(p,90,.3+t*.1)}
  for(const g of G.gens.slice())if(Math.hypot(g.x-p.x,g.z-p.z)<3.6)hurtGen(g,dmg,p);for(const c of G.chests.slice())if(Math.hypot(c.x-p.x,c.z-p.z)<3)openChest(c,p);breakAround(p.x+f.x*2,p.z+f.z*2,1,dmg,p)}
-function blast(p,x,z,R){for(const e of G.enemies)if(!e.dead&&Math.hypot(e.x-x,e.z-z)<R)killEnemy(e,p);for(const g of G.gens.slice())if(Math.hypot(g.x-x,g.z-z)<R)hurtGen(g,10,p);ring(x,z,R,0x80a0ff);burst(x,1,z,0x80a0ff,40,8)}
+function blast(p,x,z,R){for(const e of G.enemies)if(!e.dead&&Math.hypot(e.x-x,e.z-z)<R){if(EDEF[e.type].boss)hurtEnemy(e,e.max*.04/(BOSSMUL[p.hero]||1),p);else killEnemy(e,p)}for(const g of G.gens.slice())if(Math.hypot(g.x-x,g.z-z)<R)hurtGen(g,10,p);ring(x,z,R,0x80a0ff);burst(x,1,z,0x80a0ff,40,8)}
 function usePotion(p){if(p.potions<=0){pmsg(p,'No potions');return}p.potions--;blast(p,p.x,p.z,20);G.flash=1;sfx('potion');rumble(p,400,.8);
  // stronger potions as the dungeon gets deeper: monsters near you and your fellowship freeze in time (wherever they are), generators stall, flood water stops rising
  const fz=Math.min(4+G.level*.25,12),near=players.filter(q=>q.alive);let n=0;
- for(const e of G.enemies)if(!e.dead&&near.some(q=>Math.hypot(e.x-q.x,e.z-q.z)<30)){e.frz=Math.max(e.frz||0,fz);n++}G.genFrz=Math.max(G.genFrz||0,fz);
+ for(const e of G.enemies)if(!e.dead&&near.some(q=>Math.hypot(e.x-q.x,e.z-q.z)<30)){e.frz=EDEF[e.type].boss?2:Math.max(e.frz||0,fz);n++}G.genFrz=Math.max(G.genFrz||0,fz);
  let msg='Time freezes for '+Math.round(fz)+'s!';if(G.flood){const wf=Math.min(8+G.level*.3,20);G.flood.frz=Math.max(G.flood.frz||0,wf);msg+=' The water stops for '+Math.round(wf)+'s'}
  for(const q of humans())pmsg(q,msg);ring(p.x,p.z,30,0xbfeaff)}
 function eat(p){if(p.pouch<=0){pmsg(p,'No stored food');return}if(p.hp>=p.max){pmsg(p,'Health is full');return}const fh=Math.max(50,Math.round(150*growth()));p.pouch--;p.hp=Math.min(p.max,p.hp+fh);pmsg(p,'Ate stored food: +'+fh);sfx('food')}
@@ -865,7 +873,7 @@ function updatePlayer(p,dt){
   else{p.score+=100;if(G.treasure)p.tgold+=100;sfx('gold');burst(it.x,.6,it.z,0xffd24a,10,3)}
   it.gone=true;G.lg.remove(it.mesh);if(p.local)rumble(p,40,.22)}
  for(const c of G.chests.slice())if(Math.hypot(c.x-p.x,c.z-p.z)<H.rad+.75)openChest(c,p);
- if(!p.ai&&G.transT<=0&&Math.hypot(p.x-G.exit.x,p.z-G.exit.z)<1.7)exitReached();
+ if(!p.ai&&G.transT<=0&&!G.exitLocked&&Math.hypot(p.x-G.exit.x,p.z-G.exit.z)<1.7)exitReached();
  syncPlayer(p,vr,dt);
 }
 function syncPlayer(p,vr,dt){p.dolly.position.set(p.x,0,p.z);p.dolly.rotation.y=p.yaw;
@@ -879,7 +887,7 @@ function syncPlayer(p,vr,dt){p.dolly.position.set(p.x,0,p.z);p.dolly.rotation.y=
 function spawnFromGens(dt){if(G.transT>0)return;if(G.genFrz>0){G.genFrz-=dt;return}for(const g of G.gens){g.t-=dt;if(Math.random()<dt*4)G.parts.push({x:g.x+rf(-.4,.4),y:.7,z:g.z+rf(-.4,.4),vx:0,vy:rf(1,2.5),vz:0,life:rf(.5,1),c:EDEF[g.type].gen,g:true,ng:true});
  if(g.t>0)continue;g.t=g.rate*rf(.7,1.3);if(G.enemies.length>=G.cap)continue;const n=nearest(g);if(!n||n.d>(G.deathCalm?9:42))continue;const a=Math.random()*TAU;spawnEnemy(g.type,g.x+Math.cos(a)*1.5,g.z+Math.sin(a)*1.5)}}
 function updateEnemies(dt){const W=G.W,E=G.enemies,wiz=players.filter(p=>p.hero==='wizard'&&p.alive),kd=Math.pow(.02,dt);
- for(let k=0;k<E.length;k++){const e=E[k];if(e.dead)continue;if(e.frz>0){e.frz-=dt;if(e.frz<=0)e.stone=0;continue}const D0=EDEF[e.type];e.atk-=dt;e.stun-=dt;e.flash-=dt;
+ for(let k=0;k<E.length;k++){const e=E[k];if(e.dead)continue;const D0=EDEF[e.type];if(D0.boss){bossAI(e,dt);continue}if(D0.egg){eggAI(e,dt);continue}if(e.frz>0){e.frz-=dt;if(e.frz<=0)e.stone=0;continue}e.atk-=dt;e.stun-=dt;e.flash-=dt;
   if(e.kx||e.kz){e.x+=e.kx*dt;e.z+=e.kz*dt;e.kx*=kd;e.kz*=kd;if(Math.abs(e.kx)+Math.abs(e.kz)<.1)e.kx=e.kz=0}
   if(D0.water&&waterAI(e,dt))continue;
   if(D0.blink){e.blink-=dt;if(e.blink<=0){e.hidden=!e.hidden;e.blink=e.hidden?rf(1,1.6):rf(1.8,2.8);burst(e.x,1.4,e.z,0xc070ff,8,2)}}
@@ -923,7 +931,7 @@ function updateParts(dt){for(const q of G.parts){q.life-=dt;if(!q.ng)q.vy-=14*dt
  for(const f of G.fx){f.t+=dt;const k=f.t/f.dur;f.m.scale.setScalar(.5+k*f.r);f.m.material.opacity=Math.max(0,.9*(1-k))}G.fx=G.fx.filter(f=>{if(f.t>=f.dur){scene.remove(f.m);f.m.geometry.dispose();f.m.material.dispose();return false}return true});
  const hs=humans().filter(p=>p.alive),ref=hs.length?hs:[G.start];for(const r of ref){if(!r)continue;while(G.embers.length<ref.length*45)G.embers.push({x:r.x+rf(-9,9),y:rf(0,WALLH),z:r.z+rf(-9,9),vy:rf(.1,.5),ph:Math.random()*9,c:Math.random()<.5?[1,.45,.12]:[.5,.42,.35]})}
  for(const m of G.embers){m.y+=m.vy*dt;m.x+=Math.sin(G.time+m.ph)*dt*.3;if(m.y>WALLH){m.y=0;const r=ref[rnd(ref.length)];if(r){m.x=r.x+rf(-9,9);m.z=r.z+rf(-9,9)}}}
- if(G.exit&&Math.random()<dt*25)G.parts.push({x:G.exit.x+rf(-1.4,1.4),y:.3,z:G.exit.z+rf(-1.4,1.4),vx:0,vy:rf(1,3),vz:0,life:rf(.8,1.6),c:0x60ff90,g:true,ng:true})}
+ if(G.exit&&!G.exitLocked&&Math.random()<dt*25)G.parts.push({x:G.exit.x+rf(-1.4,1.4),y:.3,z:G.exit.z+rf(-1.4,1.4),vx:0,vy:rf(1,3),vz:0,life:rf(.8,1.6),c:0x60ff90,g:true,ng:true})}
 function animItems(dt){for(const it of G.items){if(it.gone)continue;it.mesh.rotation.y=G.time*1.3+it.ph;it.mesh.position.y=.15+Math.sin(G.time*2.5+it.ph)*.12}
  for(const g of G.gens)g.mesh.scale.setScalar(.55+.45*clamp(g.hp/g.max,0,1));
  if(G.exit){G.exit.beam.material.opacity=.12+Math.sin(G.time*3)*.05;G.exit.disc.rotation.z=G.time*1.6}
@@ -954,7 +962,8 @@ const ITEMGLOW={potion:[.25,.45,1],key:[.9,.7,.25],treasure:[.9,.7,.2],charm:[1,
 function flushAll(){for(const k in POOLS)POOLS[k].n=0;for(const k in GL)GL[k].n=0;for(const k in MPOOL)MPOOL[k].n=0;if(EELTOP)for(const P of EELTOP)P.n=0;for(const k in SKTOP)SKTOP[k].n=0;
  const put=(k,x,y,z,ry,rx,rz,s,sz,col)=>{const P=POOLS[k];if(P.n>=P.max)return;D.position.set(x,y,z);D.rotation.set(rx,ry,rz);D.scale.set(s,s,s*sz);D.updateMatrix();P.m.setMatrixAt(P.n,D.matrix);P.m.setColorAt(P.n,TC.setHex(col).convertSRGBToLinear());P.n++};
  const t=G.time;
- for(const e of G.enemies){if(e.dead)continue;const D0=EDEF[e.type];
+ tsDraw();
+ for(const e of G.enemies){if(e.dead)continue;const D0=EDEF[e.type];if(D0.boss||D0.egg)continue;
   if(D0.water&&drawWater(e,t))continue;
   if(e.hidden){if(Math.random()<.3)GL.spark.add(e.x+rf(-.4,.4),rf(.3,2),e.z+rf(-.4,.4),.5,.25,.7);continue}
   const fl=e.type==='ghost'||e.type==='death',y=fl?.12+Math.sin(t*3+e.ph)*.12:Math.abs(Math.sin(t*9+e.ph))*.08*e.moving;
@@ -978,7 +987,7 @@ function flushAll(){for(const k in POOLS)POOLS[k].n=0;for(const k in GL)GL[k].n=
  for(const g of G.gens)GL.halo.add(g.x,.9,g.z,g.c[0]*.5,g.c[1]*.5,g.c[2]*.5);
  for(const c of G.chests)GL.halo.add(c.x,.7,c.z,.35,.25,.08);
  for(const p of players)if(p.ai&&p.alive){const c=RGB(parseInt(p.H.css.slice(1),16));GL.orb.add(p.x,2.55,p.z,c[0]*.5,c[1]*.5,c[2]*.5)}
- if(G.exit){GL.halo.add(G.exit.x,.8,G.exit.z,.25,.9,.45);GL.halo.add(G.exit.x,2.4,G.exit.z,.12,.45,.22)}
+ if(G.exit&&!G.exitLocked){GL.halo.add(G.exit.x,.8,G.exit.z,.25,.9,.45);GL.halo.add(G.exit.x,2.4,G.exit.z,.12,.45,.22)}
  for(const k in POOLS){const P=POOLS[k];P.m.count=P.n;P.m.instanceMatrix.needsUpdate=true;if(P.m.instanceColor)P.m.instanceColor.needsUpdate=true}
  if(EELTOP)for(const P of EELTOP){P.m.count=P.n;P.m.instanceMatrix.needsUpdate=true}for(const k in SKTOP){const P=SKTOP[k];P.m.count=P.n;P.m.instanceMatrix.needsUpdate=true}
  for(const k in MPOOL){const P=MPOOL[k];P.m.count=P.n;P.m.instanceMatrix.needsUpdate=true;P.yaw.needsUpdate=true;P.tint.needsUpdate=true}
@@ -1004,8 +1013,11 @@ function hudTick(dt){if(!G||G.demo||!players.length||!G.lg)return;fpTick();const
   const team=players.filter(q=>q!==p&&!q.local);e.allies.textContent=team.length?'Team: '+team.map(a=>`${a.H.name}${a.ai?' (ally)':''} ${a.alive?Math.round(a.hp/a.max*100)+'%':'fallen'}`).join(' · '):'';
   e.tier.textContent=H.tiers[p.tier-1]+' (power '+p.tier+'/5)';e.score.textContent=p.score.toLocaleString()+' gold';
   drawMini(e.mini,p)}
- const bm=document.querySelector('.bigmap');if(bm)drawMini(bm,null);
+ const bm=document.querySelector('.bigmap');if(bm)drawMini(bm,null);bossBar();
  if(renderer.xr.isPresenting&&XR.hud)drawVRHud()}
+function bossFrac(){if(G.net==='client')return G.tsNet?G.tsNet[1]/1000:-1;const b=G.boss;return b&&!b.dead?clamp(b.hp/b.max,0,1):-1}
+function bossBar(){const f=bossFrac(),el=$('#bossbar');if(el){el.hidden=f<0||renderer.xr.isPresenting;if(f>=0)el.querySelector('span').style.transform=`scaleX(${f})`}
+ if(XR.bossM){XR.bossM.visible=f>=0;if(f>=0){const x=XR.bossC.getContext('2d');x.clearRect(0,0,512,64);x.fillStyle='rgba(10,4,4,.65)';x.fillRect(0,0,512,64);x.fillStyle='#e8c0b0';x.font='bold 22px serif';x.textAlign='center';x.fillText('TROLL SPIDER',256,22);x.fillStyle='#3a0806';x.fillRect(16,32,480,22);x.fillStyle='#d8261a';x.fillRect(16,32,480*f,22);XR.bossM.material.map.needsUpdate=true}}}
 function banner(t,s,d){$('#bT').textContent=t;$('#bS').textContent=s||'';$('#banner').classList.add('show');G.bannerT=d||2}
 
 // ---------- VR
@@ -1028,8 +1040,9 @@ for(let i=0;i<2;i++){const c=renderer.xr.getController(i);c.addEventListener('co
 function onVRStart(){const p=players[0];if(!p)return;showTouch();for(const c of XR.c)p.dolly.add(c);for(const q of players)setLayer(q.body.root,0);p.body.root.visible=false;applyQuality();
  const hp=(w,h,cv)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv),transparent:true,opacity:.9,depthTest:false,depthWrite:false,fog:false}));m.renderOrder=999;m.frustumCulled=false;p.cam.add(m);return m};
  XR.hudC=document.createElement('canvas');XR.hudC.width=512;XR.hudC.height=256;XR.hud=hp(.34,.17,XR.hudC);XR.hud.position.set(-.37,.25,-.9);XR.hud.rotation.set(-.22,.38,0);
- XR.mapC=document.createElement('canvas');XR.mapC.width=XR.mapC.height=256;XR.map=hp(.21,.21,XR.mapC);XR.map.position.set(.4,.26,-.9);XR.map.rotation.set(-.22,-.4,0);$('#hud').hidden=true}
-function onVREnd(){vrMenuClose();vrArtHide();wizHide();const p=players[0];$('#hud').hidden=false;for(const k of ['hud','map'])if(XR[k]){if(XR[k].parent)XR[k].parent.remove(XR[k]);XR[k]=null};if(!p)return;p.cam.add(p.vm.root);p.vm.root.position.set(0,0,0);setLayer(p.vm.root,20);players.forEach(q=>setLayer(q.body.root,10+q.i));p.body.root.visible=p.alive;applyQuality();showTouch();if(running())setPause(true)}
+ XR.mapC=document.createElement('canvas');XR.mapC.width=XR.mapC.height=256;XR.map=hp(.21,.21,XR.mapC);XR.map.position.set(.4,.26,-.9);XR.map.rotation.set(-.22,-.4,0);
+ XR.bossC=document.createElement('canvas');XR.bossC.width=512;XR.bossC.height=64;XR.bossM=hp(.36,.045,XR.bossC);XR.bossM.position.set(0,.34,-.9);XR.bossM.rotation.x=-.3;XR.bossM.visible=false;$('#hud').hidden=true}
+function onVREnd(){vrMenuClose();vrArtHide();wizHide();const p=players[0];$('#hud').hidden=false;for(const k of ['hud','map','bossM'])if(XR[k]){if(XR[k].parent)XR[k].parent.remove(XR[k]);XR[k]=null};if(!p)return;p.cam.add(p.vm.root);p.vm.root.position.set(0,0,0);setLayer(p.vm.root,20);players.forEach(q=>setLayer(q.body.root,10+q.i));p.body.root.visible=p.alive;applyQuality();showTouch();if(running())setPause(true)}
 async function enterVR(){if(!navigator.xr){menuMsg('This browser has no VR support. Open the page in your headset’s browser.');return}
  try{const s=await navigator.xr.requestSession('immersive-vr',{optionalFeatures:['local-floor','bounded-floor']});if(!G||G.demo)startGame(true);renderer.xr.setReferenceSpaceType('local-floor');await renderer.xr.setSession(s);onVRStart();watchXR(s)}
  catch(err){menuMsg('VR could not start here. Open this page directly in your headset’s browser, then press Enter VR.')}}
@@ -1046,7 +1059,7 @@ function render(){renderer.shadowMap.needsUpdate=true;
  renderer.setScissorTest(false)}
 let last=performance.now();
 renderer.setAnimationLoop(()=>{const now=performance.now(),dt=Math.min(.05,(now-last)/1000);last=now;pollPads();
- if(G&&G.lg&&!G.demo&&!G.paused){poolTick(dt);floodTick(dt)}
+ if(G&&G.lg&&!G.demo&&!G.paused){poolTick(dt);floodTick(dt);tsTick(dt)}
  if(G&&renderer.xr.isPresenting)vrMenuTick();
  if(G&&G.paused&&G.net==='host'&&!G.over)hostNet(dt);
  if(G&&(!G.paused||G.net==='client'))update(dt);pressed.clear();TOUCH.dx=TOUCH.dy=0;TOUCH.e={};mouse.dx=mouse.dy=0;mouse.rp=mouse.mp=false;
@@ -1060,13 +1073,13 @@ const NET={vis:'wifi',p2p:false,room:null,nr:null,mode:null,code:null,myId:'c'+M
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const b64=u8=>{let s='';for(let i=0;i<u8.length;i++)s+=String.fromCharCode(u8[i]);return btoa(s)};
 const unb64=s=>{try{const b=atob(s),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u}catch(e){return new Uint8Array(0)}};
-const ET=['ghost','grunt','demon','lobber','sorcerer','death','gargoyle','naga','eel','drowned','drownbrute'],PK=['axe','axe5','arrow','knife','knife5','bolt','fire','rock'],PSPD=[22,22,46,35,35,36,13,9],IT=['food','potion','charm','key','treasure'];
+const ET=['ghost','grunt','demon','lobber','sorcerer','death','gargoyle','naga','eel','drowned','drownbrute','tspider','egg','spiderling'],PK=['axe','axe5','arrow','knife','knife5','bolt','fire','rock'],PSPD=[22,22,46,35,35,36,13,9],IT=['food','potion','charm','key','treasure'];
 const q11=v=>clamp(Math.round(v*8),0,2047),angQ=(a,n)=>((Math.round(a/TAU*n)%n)+n)%n;
 function pack(list,fn){const u=new Uint8Array(list.length*4),dv=new DataView(u.buffer);list.forEach((o,i)=>dv.setUint32(i*4,fn(o)>>>0));return b64(u)}
 function unpack(s,fn){const u=unb64(typeof s==='string'?s:''),dv=new DataView(u.buffer),out=[];for(let i=0;i+3<u.length;i+=4)out.push(fn(dv.getUint32(i)));return out}
 const packE=e=>q11(e.x)<<21|q11(e.z)<<10|angQ(e.rot,16)<<6|Math.max(0,ET.indexOf(e.type))<<2|(e.flash>0?2:0)|(e.hidden?1:0);
-function hostSnap(){const rem=players.filter(p=>p.net&&p.alive);let E=G.enemies.filter(e=>!e.dead);
- if(E.length>260)E=E.map(e=>[rem.length?Math.min(...rem.map(p=>(p.x-e.x)**2+(p.z-e.z)**2)):0,e]).sort((a,b)=>a[0]-b[0]).slice(0,260).map(a=>a[1]);
+function hostSnap(){const rem=players.filter(p=>p.net&&p.alive);let E=G.enemies.filter(e=>!e.dead);const BE=E.filter(e=>e.type==='tspider');if(BE.length)E=BE.concat(E.filter(e=>e.type!=='tspider'));
+ if(E.length>260&&!BE.length)E=E.map(e=>[rem.length?Math.min(...rem.map(p=>(p.x-e.x)**2+(p.z-e.z)**2)):0,e]).sort((a,b)=>a[0]-b[0]).slice(0,260).map(a=>a[1]);
  const J=[];for(let bi=G.proj.length-1;bi>=0;bi--){const b=G.proj[bi];if(!b.dead&&J.length<220)J.push([b.kind==='axe'?(b.tier>=5?1:0):b.kind==='arrow'?2:b.kind==='knife'?(b.tier>=5?4:3):5,b.x,b.z,Math.atan2(b.vx,b.vz),b.tier>=3])}
  for(const f of G.eproj)if(!f.dead&&J.length<260)J.push([6,f.x,f.z,Math.atan2(f.vx,f.vz),0]);for(const r of G.rocks)if(!r.dead&&J.length<280)J.push([7,r.x,r.z,Math.atan2(r.vx,r.vz),0]);
  const pj=o=>q11(o[1])<<21|q11(o[2])<<10|o[0]<<7|angQ(o[3],64)<<1|(o[4]?1:0);
@@ -1074,6 +1087,8 @@ function hostSnap(){const rem=players.filter(p=>p.net&&p.alive);let E=G.enemies.
   P:players.map(p=>[p.netId,p.hero,Math.round(p.x*10),Math.round(p.z*10),Math.round(p.yaw*100),Math.max(0,Math.ceil(p.hp)),Math.ceil(p.shield),Math.floor(p.mana),p.keys,p.potions,p.pouch,p.score,p.tier,p.alive?1:0,Math.round(p.anim*10),Math.round(Math.max(0,p.cd1)*10),p.buffT>0?['might','haste','ward'].indexOf(p.buff)+1:0,Math.ceil(Math.max(0,p.buffT)),p.kills,p.moving>.5?1:0,Math.round((p.spawn?p.spawn.x:p.x)*10),Math.round((p.spawn?p.spawn.z:p.z)*10),p.ai?1:0]),
   E:pack(E,packE),J:pack(J,pj),I:pack(G.items.filter(i=>!i.gone).slice(0,90),i=>q11(i.x)<<21|q11(i.z)<<10|Math.max(0,IT.indexOf(i.type))),
   Gn:G.gens.map(g=>g.id+'.'+Math.round(clamp(g.hp/g.max,0,1)*9)).join(','),C:G.chests.map(c=>c.id).join(','),
+  B:G.boss&&!G.boss.dead?[['idle','wind','slam','orbturn','orb','lay','roar','vanish','appear'].indexOf(G.boss.bs),Math.round(G.boss.hp/G.boss.max*1000),Math.round((G.boss.fade===undefined?1:G.boss.fade)*100),Math.round(Math.min(G.boss.bt,9)*100)]:0,
+  Ob:(G.orbs||[]).filter(f=>!f.dead).slice(0,30).map(f=>[Math.round(f.x*10),Math.round(f.z*10)]),Wv:(G.waves||[]).map(w=>[Math.round(w.x*10),Math.round(w.z*10),Math.round(w.dx*100),Math.round(w.dz*100),Math.round(w.d*10)]),Rm:G.remains||[],
   D:[...G.doorMesh.keys()].map(k=>k.toString(36)).join(','),K:[...G.crack.keys()].map(k=>k.toString(36)).join(','),F:G.fxq.splice(0,14)};
  while(JSON.stringify(s).length>3900&&E.length>20){E=E.slice(0,Math.floor(E.length*.8));s.E=pack(E,packE)}
  return s}
@@ -1108,7 +1123,7 @@ function syncStats(p,a){const hp=a[5];if(a[8]>p.keys||a[9]>p.potions||a[10]>p.po
 function applySnap(s){if(!s||typeof s!=='object')return;
  if(!G.lg||s.sd!==G.seed||s.lv!==G.level||!!s.tr!==G.treasure){G.seed=s.sd|0;G.level=clamp(s.lv|0,1,99);G.treasure=!!s.tr;for(const q of players.filter(q=>q.puppet))removePlayer(q);buildLevel();
   const me=(s.P||[]).find(a=>a[0]===NET.myId),p=players[0];if(me){p.x=me[20]/10;p.z=me[21]/10}else{p.x=G.start.x;p.z=G.start.z}p.yaw=0;showTouch()}
- G.timer=s.tm|0;if(G.flood)G.flood.h=(s.fh|0)/100;G.flash=Math.max(G.flash,(s.fl|0)/10);
+ G.timer=s.tm|0;if(G.flood)G.flood.h=(s.fh|0)/100;G.tsNet=s.B||null;G.tsOrb=s.Ob||null;G.tsRem=s.Rm||null;G.waves=(s.Wv||[]).map(w=>({x:w[0]/10,z:w[1]/10,dx:w[2]/100,dz:w[3]/100,d:w[4]/10,w:1.7}));if(s.B)G.tsSeen=1;else if(G.tsSeen&&G.exitLocked){G.exitLocked=false;G.tsSeen=0;if(G.exit&&G.exit.g)G.exit.g.visible=true;banner('The Troll Spider is dead!','The exit has opened in the middle of his lair',4)}G.flash=Math.max(G.flash,(s.fl|0)/10);
  const seen=new Set();
  for(const a of Array.isArray(s.P)?s.P:[]){if(!Array.isArray(a)||!HEROES[a[1]])continue;seen.add(a[0]);
   if(a[0]===NET.myId){syncStats(players[0],a);continue}
@@ -1432,6 +1447,119 @@ function poolTick(dt){const t=G.time;for(const p of players)if(p.manaRegen&&p.al
    else if(p.inPool&&d>pl.r+.3)p.inPool=false;
    if(p.el&&d<11&&(G.secretOpen||!G.secret)&&!pl.greeted.has(p.i)){pl.greeted.add(p.i);if(p.el.say){p.el.say.querySelector('p').textContent=ANGEL_LINE;p.el.say.style.opacity=1;p.sayT=9}
     if(!pl.spoke){pl.spoke=true;G.angelTalk=performance.now()+9000;sayAngel(ANGEL_LINE)}if(renderer.xr.isPresenting&&p.i===0)angelBubble(pl)}}}}
+
+// ---------- level 30: the Troll Spider's lair. One huge, dark cave with stalactites, his eggs, and him.
+// He mostly stays put and turns to face you; he slams his hammer to send a straight shockwave, turns his back to fire red web orbs,
+// lays eggs that hatch into baby troll spiders unless you smash them, and blinks out to reappear right in front of someone.
+const TS={tex:{},mesh:null,eggM:[],remM:[],orbM:[],waveM:[],stal:null};
+const BOSSMUL={barbarian:1.6,elf:.45,wizard:.85,valkyrie:.7};
+const TSF=['front','q_r','q_l','side_r','side_l','bq_r','bq_l','back','raise','raise2','slam','slam2','gback','gbq_a','gbq_b','roar','roar_r','roar_l','roar_back','egg','egg_hatched','egg_smashed','orb','egg_web'];
+function tsTex(n){let t=TS.tex[n];if(!t){t=TS.tex[n]=texLoader.load('sprites/ts_'+n+'.webp');t.encoding=THREE.sRGBEncoding}return t}
+const TSV=`varying vec2 vUv;
+#include <fog_pars_vertex>
+void main(){vec3 c=(modelMatrix*vec4(0.,0.,0.,1.)).xyz;vec3 to=cameraPosition-c;to.y=0.;vec3 u=to/max(length(to),.001);vec3 r=vec3(u.z,0.,-u.x);
+ vUv=uv;vec3 wp=c+r*position.x*length(modelMatrix[0].xyz)+vec3(0.,position.y*length(modelMatrix[1].xyz),0.);vec4 mvPosition=viewMatrix*vec4(wp,1.);gl_Position=projectionMatrix*mvPosition;
+ #include <fog_vertex>
+}`;
+const TSFR=`uniform sampler2D map;uniform float op;uniform vec3 tint;varying vec2 vUv;
+#include <fog_pars_fragment>
+void main(){vec4 t=texture2D(map,vUv);if(t.a<.4||op<.02)discard;gl_FragColor=vec4(t.rgb*tint,op);
+#include <fog_fragment>
+}`;
+function tsBill(w,h){const geo=new THREE.PlaneGeometry(w,h);geo.translate(0,h/2,0);const mat=new THREE.ShaderMaterial({uniforms:THREE.UniformsUtils.merge([THREE.UniformsLib.fog,{map:{value:null},op:{value:1},tint:{value:new THREE.Color(1,1,1)}}]),vertexShader:TSV,fragmentShader:TSFR,fog:true,transparent:true,side:THREE.DoubleSide});mat.uniforms.tint={value:new THREE.Color(1,1,1)};
+ const m=new THREE.Mesh(geo,mat);m.frustumCulled=false;return m}
+function tsSetTex(m,n){const t=tsTex(n);if(m.material.uniforms.map.value!==t)m.material.uniforms.map.value=t}
+// the cave: a big rough cavern with a few rock pillars to hide behind, entered from the south
+function genLair(){const W=26,H=26,g=new Uint8Array(W*H).fill(1),cx=13,cy=13;
+ for(let j=1;j<H-1;j++)for(let i=1;i<W-1;i++){const dx=i-cx,dy=j-cy,a=Math.atan2(dy,dx),R=9.6+Math.sin(a*3+1.3)*.9+Math.sin(a*5+.4)*.6;if(Math.hypot(dx,dy)<R)g[j*W+i]=0}
+ for(let i=11;i<=15;i++)for(let j=20;j<=24;j++)g[j*W+i]=0;
+ for(const [a,r] of [[.8,6],[2.4,6.3],[3.9,5.8],[5.5,6.2]]){const pi=Math.round(cx+Math.cos(a)*r),pj=Math.round(cy+Math.sin(a)*r);for(const [di,dj] of [[0,0],[1,0],[0,1],[1,1]])g[(pj+dj)*W+pi+di]=1}
+ const start={x:11,y:21,w:5,h:3,cx:13,cy:22},ex={x:12,y:12,w:3,h:3,cx:13,cy:13};return{W,H,g,start,ex,rooms:[start,{x:5,y:5,w:16,h:14,cx:13,cy:12},ex],secret:null,boss:true}}
+function lairDress(lg,W,H,g){const rock=new THREE.MeshStandardMaterial({color:0x2a2320,roughness:1});
+ const cells=[];for(let j=0;j<H;j++)for(let i=0;i<W;i++)if(g[j*W+i]===0)cells.push([i,j]);
+ const n=Math.min(260,cells.length*2),geo=new THREE.ConeGeometry(.5,1,7);geo.translate(0,-.5,0);const im=new THREE.InstancedMesh(geo,rock,n),mm=new THREE.Matrix4(),q=new THREE.Quaternion();
+ for(let k=0;k<n;k++){const c=cells[Math.floor(Math.random()*cells.length)],len=rf(.6,2.4),s=rf(.35,.9);mm.compose(new THREE.Vector3(c[0]*T+rf(.3,T-.3),WALLH,c[1]*T+rf(.3,T-.3)),q,new THREE.Vector3(s,len,s));im.setMatrixAt(k,mm)}
+ im.count=n;im.castShadow=true;lg.add(im);
+ // stalagmites hugging the walls
+ const near=cells.filter(([i,j])=>[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>g[(j+b)*W+i+a]===1)),m2=new THREE.InstancedMesh(new THREE.ConeGeometry(.45,1,7).translate(0,.5,0),rock,Math.max(1,near.length));
+ near.forEach((c,k)=>{const s=rf(.4,.9);mm.compose(new THREE.Vector3(c[0]*T+rf(.5,T-.5),0,c[1]*T+rf(.5,T-.5)),q,new THREE.Vector3(s,rf(.5,1.6),s));m2.setMatrixAt(k,mm)});m2.count=near.length;lg.add(m2);
+ // old egg nests in webs along the walls
+ for(let k=0;k<7&&near.length;k++){const c=near[Math.floor(Math.random()*near.length)],m=tsBill(2.6,1.45);tsSetTex(m,'egg_web');m.material.uniforms.tint.value.setRGB(.55,.5,.5);m.position.set(c[0]*T+T/2+rf(-1,1),0,c[1]*T+T/2+rf(-1,1));lg.add(m)}}
+function spawnBoss(){const n=Math.max(1,players.filter(p=>p.alive).length),hp=9000*(1+.7*(n-1));const before=G.enemies.length;spawnEnemy('tspider',13*T+T/2,13*T+T/2);const e=G.enemies[before];if(!e)return;
+ Object.assign(e,{hp,max:hp,rot:PI,bs:'idle',bt:0,cd:3,home:{x:e.x,z:e.z},lastLay:-6,lastBlink:0,rage:0,fade:1,atk:0});G.boss=e}
+function tsTarget(e){const al=players.filter(p=>p.alive);if(!al.length)return null;if(!e.tgt||!e.tgt.alive||Math.random()<.004){let b=null,bd=1e9;for(const p of al){const d=Math.hypot(p.x-e.x,p.z-e.z);if(d<bd){bd=d;b=p}}e.tgt=b}return e.tgt}
+function angTo(e,p){return Math.atan2(p.x-e.x,p.z-e.z)}
+function turnTo(e,a,sp,dt){let d=a-e.rot;d=Math.atan2(Math.sin(d),Math.cos(d));e.rot+=clamp(d,-sp*dt,sp*dt);return Math.abs(d)}
+function bossAI(e,dt){const p=tsTarget(e);e.bt+=dt;e.cd-=dt;const fx=Math.sin(e.rot),fz=Math.cos(e.rot),rage=e.rage,fast=1+rage*.25;
+ if(e.frz>0){e.frz-=dt;return}
+ const hpF=e.hp/e.max;if((hpF<.66&&rage<1)||(hpF<.33&&rage<2)){e.rage++;e.bs='roar';e.bt=0;sfx('drain');for(const q of humans()){pmsg(q,'The Troll Spider roars! More eggs!');rumble(q,500,.8)}}
+ if(!p)return;const d=Math.hypot(p.x-e.x,p.z-e.z),a=angTo(e,p);
+ // big body: push heroes out and hurt on contact
+ for(const q of players){if(!q.alive||e.hidden)continue;const dx=q.x-e.x,dz=q.z-e.z,dd=Math.hypot(dx,dz),m=2.3+q.H.rad;if(dd<m&&dd>1e-3){q.x=e.x+dx/dd*m;q.z=e.z+dz/dd*m;if((e.atk-=dt)<=0){e.atk=.8;hurtPlayer(q,25)}}}
+ switch(e.bs){
+ case 'idle':{turnTo(e,a,1.1*fast,dt);const off=Math.hypot(e.x-e.home.x,e.z-e.home.z);
+  if(d>16&&off<4){e.x+=fx*.7*dt;e.z+=fz*.7*dt}else if(d<3.8&&off<4){e.x-=fx*.7*dt;e.z-=fz*.7*dt}collide(e,1.6);
+  if(e.cd<=0){const r=Math.random(),eggs=G.enemies.filter(x=>!x.dead&&x.type==='egg').length;
+   if(G.time-e.lastBlink>9&&r<.25){e.bs='vanish';e.bt=0;e.lastBlink=G.time;sfx('drain')}
+   else if(d<10&&turnTo(e,a,0,dt)<.6){e.bs='wind';e.bt=0}
+   else if(eggs<5+rage*2&&G.time-e.lastLay>13/fast){e.bs='lay';e.bt=0;e.lastLay=G.time}
+   else{e.bs='orbturn';e.bt=0}}break}
+ case 'wind':turnTo(e,a,.5,dt);if(e.bt>(e.quick?.7:.95)/Math.sqrt(fast)){e.bs='slam';e.bt=0;e.quick=0;tsWave(e);sfx('gen');G.flash=Math.max(G.flash,.25);for(const q of humans())if(Math.hypot(q.x-e.x,q.z-e.z)<20)rumble(q,350,1)}break;
+ case 'slam':if(e.bt>.65){e.bs='idle';e.cd=rf(1.2,2)/fast}break;
+ case 'orbturn':if(turnTo(e,a+PI,2.4,dt)<.25||e.bt>1.6){e.bs='orb';e.bt=0;e.shots=0}break;
+ case 'orb':turnTo(e,a+PI,.8,dt);if(e.bt>.25*(e.shots+1)&&e.shots<4+rage){e.shots++;tsOrb(e,p)}if(e.bt>.25*(5+rage)+.4){e.bs='idle';e.cd=rf(1.4,2.2)/fast}break;
+ case 'lay':if(e.bt>.6&&!e.laid){e.laid=1;tsLay(e,2+(Math.random()<.5?1:0))}if(e.bt>1.4){e.bs='idle';e.laid=0;e.cd=rf(1,1.8)/fast}break;
+ case 'roar':if(e.bt>.9&&!e.laid){e.laid=1;tsLay(e,3,true)}if(e.bt>1.8){e.bs='idle';e.laid=0;e.cd=1}break;
+ case 'vanish':{const t=e.bt;e.fade=t<.7?(Math.sin(t*40)>0?1:.15)*(1-t/.7):0;e.hidden=t>.45;
+  if(t>1.5){const q=players.filter(x=>x.alive);const v=q[Math.floor(Math.random()*q.length)]||p;const f=fwd(v);let ok=false;
+   for(const k of [4.6,3.8,5.6,3.2])for(const s of [0,.6,-.6,1.2,-1.2]){if(ok)break;const c=Math.cos(s),sn=Math.sin(s),dx=f.x*c-f.z*sn,dz=f.x*sn+f.z*c,x=v.x+dx*k,z=v.z+dz*k;if(!blockedAt(x,z,1.8)){e.x=x;e.z=z;ok=true}}
+   e.rot=angTo(e,v);e.tgt=v;e.home={x:e.x,z:e.z};e.bs='appear';e.bt=0;burst(e.x,1.5,e.z,0x301010,24,5);sfx('drain')}break}
+ case 'appear':{const t=e.bt;e.hidden=false;e.fade=t<.5?(Math.sin(t*40)>0?1:.2)*Math.min(1,t/.5+.3):1;turnTo(e,a,2,dt);if(t>.5){e.fade=1;e.bs='wind';e.bt=0;e.quick=1}break}}}
+function tsWave(e){const dx=Math.sin(e.rot),dz=Math.cos(e.rot);(G.waves||(G.waves=[])).push({x:e.x+dx*2,z:e.z+dz*2,dx,dz,d:0,max:20,w:1.7,hit:new Set()})}
+function tsOrb(e,p){const dx=-Math.sin(e.rot),dz=-Math.cos(e.rot),x=e.x+dx*2.1,z=e.z+dz*2.1,tx=p.x-x,tz=p.z-z,l=Math.hypot(tx,tz)||1,s=rf(-.08,.08),c=Math.cos(s),sn=Math.sin(s),vx=(tx/l*c-tz/l*sn)*11,vz=(tx/l*sn+tz/l*c)*11;
+ (G.orbs||(G.orbs=[])).push({x,y:1.5,z,vx,vz,life:3});sfx('fireball')}
+function tsLay(e,n,around){for(let k=0;k<n;k++){for(let t=0;t<20;t++){let x,z;if(around){const a=Math.random()*TAU,r=rf(5,11);x=e.home.x+Math.cos(a)*r;z=e.home.z+Math.sin(a)*r}else{const s=rf(-1.1,1.1),r=rf(3.2,6),bx=-Math.sin(e.rot+s),bz=-Math.cos(e.rot+s);x=e.x+bx*r;z=e.z+bz*r}
+  if(blockedAt(x,z,.9))continue;const before=G.enemies.length;spawnEnemy('egg',x,z);const g=G.enemies[before];if(g){g.hp=g.max=30*enemyHpMul(G.level)/2.7;g.hatch=G.time+rf(14,18);burst(x,.6,z,0xd09040,10,3)}break}}sfx('lob')}
+function eggAI(e,dt){if(G.time>=e.hatch){e.dead=true;tsRemain(e.x,e.z,'egg_hatched');burst(e.x,.8,e.z,0xd09040,16,4);sfx('kill');for(let k=0;k<3;k++){const a=Math.random()*TAU;spawnEnemy('spiderling',e.x+Math.cos(a)*.8,e.z+Math.sin(a)*.8)}}}
+function tsRemain(x,z,kind){const R=G.remains||(G.remains=[]);if(R.length<40)R.push([Math.round(x*10),Math.round(z*10),kind==='egg_hatched'?1:2])}
+function bossDown(e){G.exitLocked=false;if(G.exit&&G.exit.g)G.exit.g.visible=true;for(const o of G.enemies)if(!o.dead&&o!==e&&(o.type==='egg'||o.type==='spiderling')){o.dead=true;burst(o.x,1,o.z,EDEF[o.type].burst,6,4)}G.orbs=[];G.waves=[];G.flash=1;sfx('up');
+ burst(e.x,2.2,e.z,0x803020,40,8);banner('The Troll Spider is dead!','The exit has opened in the middle of his lair',4);for(const q of humans())rumble(q,700,1)}
+// shockwaves and orbs (the host decides who gets hit; everyone sees them)
+function tsTick(dt){const host=G.net!=='client';
+ for(const w of G.waves||[]){if(w.dead)continue;if(host){w.d+=14*dt;if(w.d>w.max||blk(Math.floor((w.x+w.dx*w.d)/T),Math.floor((w.z+w.dz*w.d)/T)))w.dead=true}
+  const fx=w.x+w.dx*w.d,fz=w.z+w.dz*w.d;for(let k=0;k<3;k++){const s=rf(-w.w,w.w);burst(fx-w.dz*s,.2,fz+w.dx*s,k?0x9a8060:0xffa040,2,2.5)}
+  if(host)for(const p of players){if(!p.alive||w.hit.has(p))continue;const rx=p.x-w.x,rz=p.z-w.z,al=rx*w.dx+rz*w.dz,lat=Math.abs(rx*w.dz-rz*w.dx);if(lat<w.w+p.H.rad&&Math.abs(al-w.d)<1.3){w.hit.add(p);hurtPlayer(p,55);rumble(p,400,1);pmsg(p,'Shockwave! Dash sideways to dodge it')}}}
+ if(host&&G.waves)G.waves=G.waves.filter(w=>!w.dead);
+ for(const f of G.orbs||[]){if(f.dead)continue;if(host){f.life-=dt;f.x+=f.vx*dt;f.z+=f.vz*dt;if(f.life<=0||blk(Math.floor(f.x/T),Math.floor(f.z/T))){f.dead=true;burst(f.x,f.y,f.z,0xff4020,8,2.5);continue}
+   for(const w of players)if(w.hero==='wizard'&&w.alive&&Math.hypot(f.x-w.x,f.z-w.z)<3.6){f.dead=true;burst(f.x,f.y,f.z,0x9fd8ff,8,2)}
+   if(!f.dead)for(const p of players)if(p.alive&&Math.hypot(f.x-p.x,f.z-p.z)<p.H.rad+.45){hurtPlayer(p,28);f.dead=true;burst(f.x,f.y,f.z,0xff4020,12,3);break}}
+  if(Math.random()<.7)spark(f.x+rf(-.2,.2),f.y+rf(-.2,.2),f.z+rf(-.2,.2),Math.random()<.5?0xffffff:0xff5020,.35)}
+ if(host&&G.orbs)G.orbs=G.orbs.filter(f=>!f.dead)}
+// drawing: the boss picks a picture from where you stand and what he is doing
+function tsFrame(e,s){const st=e.bs||'idle',front=Math.abs(s)<=1,R=s>0;
+ if(st==='wind'||st==='appear')return front?(Math.floor(G.time*6)%2?'raise2':'raise'):null;
+ if(st==='slam')return front?(e.bt<.25?'slam':'slam2'):null;
+ if(st==='orb'||st==='orbturn'||st==='lay')return Math.abs(s)>=4?'gback':Math.abs(s)===3?(R?'gbq_b':'gbq_a'):null;
+ if(st==='roar')return front?'roar':Math.abs(s)===2?(R?'roar_r':'roar_l'):'roar_back';return null}
+function tsDraw(){const cam=players[0]&&players[0].cam;if(!cam||!G.lg)return;cam.getWorldPosition(_v);
+ const bs=G.enemies.filter(e=>!e.dead&&e.type==='tspider');
+ if(!TS.mesh){TS.mesh=tsBill(5.4,4.9);scene.add(TS.mesh)}TS.mesh.visible=false;
+ for(const e of bs){const N=G.net==='client'&&G.tsNet;if(N){e.bs=['idle','wind','slam','orbturn','orb','lay','roar','vanish','appear'][N[0]]||'idle';e.fade=N[2]/100;e.bt=N[3]/100}
+  const ux=_v.x-e.x,uz=_v.z-e.z,l=Math.hypot(ux,uz)||1,fx=Math.sin(e.rot),fz=Math.cos(e.rot),dot=(fx*ux+fz*uz)/l,cr=(fx*uz-fz*ux)/l,s=Math.round(Math.atan2(cr,dot)/(PI/4));
+  const idle={0:'front',1:'q_r','-1':'q_l',2:'side_r','-2':'side_l',3:'bq_r','-3':'bq_l',4:'back','-4':'back'}[s];
+  tsSetTex(TS.mesh,tsFrame(e,s)||idle);const m=TS.mesh;m.visible=(e.fade===undefined?1:e.fade)>.02&&!e.hidden;m.position.set(e.x,0,e.z);m.material.uniforms.op.value=e.fade===undefined?1:e.fade;
+  const fl=e.flash>0;m.material.uniforms.tint.value.setRGB(fl?1.5:.78,fl?.6:.72,fl?.55:.72);
+  if((e.bs==='orb'||e.bs==='lay')&&Math.random()<.5)GL.orb.add(e.x-fx*2,1.4,e.z-fz*2,1,.25,.05);GL.orb.add(e.x+fx*.8,2.2,e.z+fz*.8,.35,.04,.02)}
+ // eggs
+ const eggs=G.enemies.filter(e=>!e.dead&&e.type==='egg');while(TS.eggM.length<eggs.length){const m=tsBill(1.05,1.3);tsSetTex(m,'egg');scene.add(m);TS.eggM.push(m)}
+ TS.eggM.forEach((m,i)=>{const e=eggs[i];m.visible=!!e;if(!e)return;const left=e.hatch?e.hatch-G.time:9,sh=left<5?Math.sin(G.time*(30-left*4))*.06*(5-left)/5:0;m.position.set(e.x+sh,0,e.z);const fl=e.flash>0;m.material.uniforms.tint.value.setRGB(fl?1.6:.85+(left<5?.3*(5-left)/5:0),fl?.7:.8,fl?.6:.75)});
+ // shells left behind
+ const R=(G.net==='client'?G.tsRem:G.remains)||[];while(TS.remM.length<R.length){const m=tsBill(1,1);scene.add(m);TS.remM.push(m)}
+ TS.remM.forEach((m,i)=>{const r=R[i];m.visible=!!r&&!!G.lg;if(!r)return;const big=r[2]===2;tsSetTex(m,big?'egg_smashed':'egg_hatched');m.scale.set(big?2.1:1.05,big?1:1.3,1);m.position.set(r[0]/10,0,r[1]/10);m.material.uniforms.tint.value.setRGB(.75,.7,.68)});
+ // orbs
+ const O=G.net==='client'?(G.tsOrb||[]).map(o=>({x:o[0]/10,y:1.5,z:o[1]/10})):(G.orbs||[]).filter(f=>!f.dead);while(TS.orbM.length<O.length){const m=tsBill(.95,.95);tsSetTex(m,'orb');m.material.uniforms.tint.value.setRGB(1.4,1.1,1.05);scene.add(m);TS.orbM.push(m)}
+ TS.orbM.forEach((m,i)=>{const o=O[i];m.visible=!!o;if(!o)return;m.position.set(o.x,o.y-.47,o.z);GL.orb.add(o.x,o.y,o.z,1,.3,.08)})}
+function tsClear(){for(const a of [TS.eggM,TS.remM,TS.orbM])for(const m of a)m.visible=false;if(TS.mesh)TS.mesh.visible=false}
 
 // ---------- flood levels (an easy one at 7, then 22, 29, 36 ...): the water rises; past the knees heroes slow down and snake trolls swim faster
 function makeFlood(easy){const w=G.W*T,h=G.H*T,c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');x.fillStyle='#1d5866';x.fillRect(0,0,256,256);
